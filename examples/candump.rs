@@ -11,7 +11,7 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let socket = CanSocket::bind(opt.ifname)?;
-    socket.set_can_fd_frames(true)?;
+    socket.set_fd_frames(true)?;
 
     loop {
         let frame = socket.read_frame()?;

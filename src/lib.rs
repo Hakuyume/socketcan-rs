@@ -45,7 +45,7 @@ impl CanSocket {
         Ok(socket)
     }
 
-    pub fn set_can_fd_frames(&self, enable: bool) -> Result<()> {
+    pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
         let opt: c_int = if enable { 1 } else { 0 };
         if unsafe {
             libc::setsockopt(

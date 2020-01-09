@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let frame = CanFdFrame::new(can_id, flags, &data)?;
 
     let socket = CanSocket::bind(opt.ifname)?;
-    socket.set_can_fd_frames(true)?;
+    socket.set_fd_frames(true)?;
     socket.write_frame(&frame)?;
 
     Ok(())
