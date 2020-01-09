@@ -62,6 +62,22 @@ impl CanSocket {
         Ok(())
     }
 
+    pub fn read_frame(&self) -> Result<CanFdFrame> {
+        let mut frame = unsafe { mem::MaybeUninit::<CanFdFrame>::zeroed().assume_init() };
+        if unsafe {
+            libc::read(
+                self.as_raw_fd(),
+                &mut frame as *mut _ as _,
+                mem::size_of_val(&frame),
+            )
+        } as usize
+            != mem::size_of_val(&frame)
+        {
+            return Err(Error::last_os_error());
+        }
+        Ok(frame)
+    }
+
     pub fn write_frame(&self, frame: &CanFdFrame) -> Result<()> {
         if unsafe {
             libc::write(
@@ -93,9 +109,10 @@ impl AsRawFd for CanSocket {
 pub type CanFdFrame = linux_can::canfd_frame;
 
 impl CanFdFrame {
-    pub fn new(can_id: u32, data: &[u8]) -> Result<Self> {
+    pub fn new(can_id: u32, flags: u8, data: &[u8]) -> Result<Self> {
         let mut frame = unsafe { mem::MaybeUninit::<Self>::zeroed().assume_init() };
         frame.can_id = can_id;
+        frame.flags = flags;
         let len = match data.len() {
             len @ 0..=8 => len,
             9..=12 => 12,
@@ -107,8 +124,12 @@ impl CanFdFrame {
             49..=64 => 64,
             _ => return Err(ErrorKind::InvalidInput.into()),
         };
-        frame.data[..data.len()].copy_from_slice(data);
         frame.len = len as _;
+        frame.data[..data.len()].copy_from_slice(data);
         Ok(frame)
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data[..self.len as _]
     }
 }

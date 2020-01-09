@@ -1,12 +1,45 @@
+use nom::{
+    bytes::complete::{tag, take_while, take_while_m_n},
+    combinator::map_res,
+    multi::many0,
+    IResult,
+};
 use socketcan::{CanFdFrame, CanSocket};
-use std::io::Result;
+use std::error::Error;
+use structopt::StructOpt;
 
-fn main() -> Result<()> {
-    let socket = CanSocket::bind("vcan0")?;
+#[derive(StructOpt)]
+struct Opt {
+    ifname: String,
+    frame: String,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let opt = Opt::from_args();
+
+    let (input, (can_id, flags, data)) = parse_frame(&opt.frame).unwrap();
+    assert!(input.is_empty());
+    let frame = CanFdFrame::new(can_id, flags, &data)?;
+
+    let socket = CanSocket::bind(opt.ifname)?;
     socket.set_can_fd_frames(true)?;
-
-    let frame = CanFdFrame::new(42, &[0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x23, 0x45, 0x67])?;
     socket.write_frame(&frame)?;
 
     Ok(())
+}
+
+fn is_digit(c: char) -> bool {
+    c.is_digit(16)
+}
+
+fn parse_frame(input: &str) -> IResult<&str, (u32, u8, Vec<u8>)> {
+    let (input, can_id) = map_res(take_while(is_digit), |s| u32::from_str_radix(s, 16))(input)?;
+    let (input, _) = tag("##")(input)?;
+    let (input, flags) = map_res(take_while_m_n(1, 1, is_digit), |s| {
+        u8::from_str_radix(s, 16)
+    })(input)?;
+    let (input, data) = many0(map_res(take_while_m_n(2, 2, is_digit), |s| {
+        u8::from_str_radix(s, 16)
+    }))(input)?;
+    Ok((input, (can_id, flags, data)))
 }
