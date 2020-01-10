@@ -10,8 +10,9 @@ struct Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
 
-    let socket = CanSocket::bind(opt.ifname)?;
+    let socket = CanSocket::new()?;
     socket.set_fd_frames(true)?;
+    socket.bind(opt.ifname)?;
 
     loop {
         let frame = socket.read_frame()?;

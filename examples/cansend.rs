@@ -21,8 +21,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert!(input.is_empty());
     let frame = CanFdFrame::new(can_id, flags, &data).unwrap();
 
-    let socket = CanSocket::bind(opt.ifname)?;
+    let socket = CanSocket::new()?;
     socket.set_fd_frames(true)?;
+    socket.bind(opt.ifname)?;
     socket.write_frame(&frame)?;
 
     Ok(())

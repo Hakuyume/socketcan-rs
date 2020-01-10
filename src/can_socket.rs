@@ -8,7 +8,7 @@ use std::os::unix::io::{AsRawFd, RawFd};
 pub struct CanSocket(RawFd);
 
 impl CanSocket {
-    fn new() -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let socket = unsafe { libc::socket(libc::PF_CAN, libc::SOCK_RAW, linux_can::CAN_RAW as _) };
         if socket == -1 {
             return Err(Error::last_os_error());
@@ -16,7 +16,7 @@ impl CanSocket {
         Ok(Self(socket))
     }
 
-    pub fn bind<I>(ifname: I) -> Result<Self>
+    pub fn bind<I>(&self, ifname: I) -> Result<()>
     where
         I: Into<Vec<u8>>,
     {
@@ -31,17 +31,16 @@ impl CanSocket {
         address.can_family = libc::AF_CAN as _;
         address.can_ifindex = ifindex as _;
 
-        let socket = Self::new()?;
         if unsafe {
             libc::bind(
-                socket.as_raw_fd(),
+                self.as_raw_fd(),
                 &address as *const _ as _,
                 mem::size_of_val(&address) as _,
             ) != 0
         } {
             return Err(Error::last_os_error());
         }
-        Ok(socket)
+        Ok(())
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
