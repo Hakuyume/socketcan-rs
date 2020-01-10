@@ -41,6 +41,21 @@ impl AsyncCanSocket {
             r => Poll::Ready(r),
         }
     }
+
+    pub async fn send(&self, frame: &CanFdFrame) -> Result<()> {
+        poll_fn(|cx| self.poll_send(cx, frame)).await
+    }
+
+    fn poll_send(&self, cx: &mut Context<'_>, frame: &CanFdFrame) -> Poll<Result<()>> {
+        ready!(self.0.poll_write_ready(cx))?;
+        match self.0.get_ref().send(frame) {
+            Err(e) if e.kind() == ErrorKind::WouldBlock => {
+                self.0.clear_write_ready(cx)?;
+                Poll::Pending
+            }
+            r => Poll::Ready(r),
+        }
+    }
 }
 
 impl Evented for CanSocket {
