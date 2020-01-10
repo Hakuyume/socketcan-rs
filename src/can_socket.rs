@@ -94,7 +94,7 @@ impl CanSocket {
     }
 
     pub fn recv(&self) -> Result<CanFdFrame> {
-        let mut frame = unsafe { mem::MaybeUninit::<CanFdFrame>::zeroed().assume_init() };
+        let mut frame = unsafe { mem::MaybeUninit::<CanFdFrame>::uninit().assume_init() };
         if unsafe {
             libc::read(
                 self.as_raw_fd(),
