@@ -43,6 +43,22 @@ impl CanSocket {
         Ok(())
     }
 
+    pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
+        let fl = unsafe { libc::fcntl(self.as_raw_fd(), libc::F_GETFL) };
+        if fl < 0 {
+            return Err(Error::last_os_error());
+        }
+        let fl = if nonblocking {
+            fl | libc::O_NONBLOCK
+        } else {
+            fl & !libc::O_NONBLOCK
+        };
+        if unsafe { libc::fcntl(self.as_raw_fd(), libc::F_SETFL, fl) } != 0 {
+            return Err(Error::last_os_error());
+        }
+        Ok(())
+    }
+
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
         let opt: c_int = if enable { 1 } else { 0 };
         if unsafe {

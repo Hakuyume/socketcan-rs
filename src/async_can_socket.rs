@@ -13,7 +13,9 @@ pub struct AsyncCanSocket(PollEvented<CanSocket>);
 
 impl AsyncCanSocket {
     pub fn new() -> Result<Self> {
-        Ok(Self(PollEvented::new(CanSocket::new()?)?))
+        let socket = CanSocket::new()?;
+        socket.set_nonblocking(true)?;
+        Ok(Self(PollEvented::new(socket)?))
     }
 
     pub fn bind<I>(&self, ifname: I) -> Result<()>
