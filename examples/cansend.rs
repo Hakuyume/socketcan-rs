@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (input, (can_id, flags, data)) = parse_frame(&opt.frame).unwrap();
     assert!(input.is_empty());
-    let frame = CanFdFrame::new(can_id, flags, &data)?;
+    let frame = CanFdFrame::new(can_id, flags, &data).unwrap();
 
     let socket = CanSocket::bind(opt.ifname)?;
     socket.set_fd_frames(true)?;
