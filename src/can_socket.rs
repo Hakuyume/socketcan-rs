@@ -59,6 +59,23 @@ impl CanSocket {
         Ok(())
     }
 
+    pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
+        let opt: c_int = if enable { 1 } else { 0 };
+        if unsafe {
+            libc::setsockopt(
+                self.as_raw_fd(),
+                linux_can::SOL_CAN_RAW as _,
+                linux_can::CAN_RAW_RECV_OWN_MSGS as _,
+                &opt as *const _ as _,
+                mem::size_of_val(&opt) as _,
+            )
+        } != 0
+        {
+            return Err(Error::last_os_error());
+        }
+        Ok(())
+    }
+
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
         let opt: c_int = if enable { 1 } else { 0 };
         if unsafe {

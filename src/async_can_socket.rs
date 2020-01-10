@@ -25,6 +25,10 @@ impl AsyncCanSocket {
         self.0.get_ref().bind(ifname)
     }
 
+    pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
+        self.0.get_ref().set_recv_own_msgs(enable)
+    }
+
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
         self.0.get_ref().set_fd_frames(enable)
     }
