@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let socket = CanSocket::new()?;
     socket.set_fd_frames(true)?;
     socket.bind(opt.ifname)?;
-    socket.write_frame(&frame)?;
+    socket.send(&frame)?;
 
     Ok(())
 }

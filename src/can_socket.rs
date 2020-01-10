@@ -60,7 +60,7 @@ impl CanSocket {
         Ok(())
     }
 
-    pub fn read_frame(&self) -> Result<CanFdFrame> {
+    pub fn recv(&self) -> Result<CanFdFrame> {
         let mut frame = unsafe { mem::MaybeUninit::<CanFdFrame>::zeroed().assume_init() };
         if unsafe {
             libc::read(
@@ -76,7 +76,7 @@ impl CanSocket {
         Ok(frame)
     }
 
-    pub fn write_frame(&self, frame: &CanFdFrame) -> Result<()> {
+    pub fn send(&self, frame: &CanFdFrame) -> Result<()> {
         if unsafe {
             libc::write(
                 self.as_raw_fd(),

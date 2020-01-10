@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     socket.bind(opt.ifname)?;
 
     loop {
-        let frame = socket.read_frame()?;
+        let frame = socket.recv()?;
         let data = frame
             .data()
             .iter()
