@@ -1,8 +1,8 @@
-use socketcan::{AsyncCanSocket, CanFdFrame};
+use futures::future::try_join;
+use socketcan::{AsyncCanSocket, AsyncRecvHalf, AsyncSendHalf, CanFdFrame};
 use std::io::Result;
 use structopt::StructOpt;
-use tokio::time::{Duration, delay_for};
-use futures::future::try_join;
+use tokio::time::{delay_for, Duration};
 
 #[derive(StructOpt)]
 struct Opt {
@@ -18,11 +18,12 @@ async fn main() -> Result<()> {
     socket.set_fd_frames(true)?;
     socket.bind(opt.ifname)?;
 
-    try_join(recv(&socket), send(&socket)).await?;
+    let (rx, tx) = socket.split();
+    try_join(recv(rx), send(tx)).await?;
     Ok(())
 }
 
-async fn recv(socket: &AsyncCanSocket) -> Result<()> {
+async fn recv(mut socket: AsyncRecvHalf) -> Result<()> {
     loop {
         let frame = socket.recv().await?;
         let data = frame
@@ -34,12 +35,12 @@ async fn recv(socket: &AsyncCanSocket) -> Result<()> {
     }
 }
 
-async fn send(socket: &AsyncCanSocket) -> Result<()> {
+async fn send(mut socket: AsyncSendHalf) -> Result<()> {
     let mut count = 0_u64;
     loop {
         let frame = CanFdFrame::new(42, 0, &count.to_be_bytes()).unwrap();
         socket.send(&frame).await?;
-        count+= 1;
+        count += 1;
         delay_for(Duration::new(1, 0)).await;
     }
 }

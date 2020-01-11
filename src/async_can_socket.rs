@@ -6,10 +6,13 @@ use mio::unix::EventedFd;
 use mio::{PollOpt, Token};
 use std::io::{ErrorKind, Result};
 use std::os::unix::io::AsRawFd;
+use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::io::PollEvented;
 
 pub struct AsyncCanSocket(PollEvented<CanSocket>);
+pub struct AsyncRecvHalf(Arc<AsyncCanSocket>);
+pub struct AsyncSendHalf(Arc<AsyncCanSocket>);
 
 impl AsyncCanSocket {
     pub fn new() -> Result<Self> {
@@ -33,7 +36,7 @@ impl AsyncCanSocket {
         self.0.get_ref().set_fd_frames(enable)
     }
 
-    pub async fn recv(&self) -> Result<CanFdFrame> {
+    pub async fn recv(&mut self) -> Result<CanFdFrame> {
         poll_fn(|cx| self.poll_recv(cx)).await
     }
 
@@ -48,7 +51,7 @@ impl AsyncCanSocket {
         }
     }
 
-    pub async fn send(&self, frame: &CanFdFrame) -> Result<()> {
+    pub async fn send(&mut self, frame: &CanFdFrame) -> Result<()> {
         poll_fn(|cx| self.poll_send(cx, frame)).await
     }
 
@@ -61,6 +64,23 @@ impl AsyncCanSocket {
             }
             r => Poll::Ready(r),
         }
+    }
+
+    pub fn split(self) -> (AsyncRecvHalf, AsyncSendHalf) {
+        let socket = Arc::new(self);
+        (AsyncRecvHalf(socket.clone()), AsyncSendHalf(socket))
+    }
+}
+
+impl AsyncRecvHalf {
+    pub async fn recv(&mut self) -> Result<CanFdFrame> {
+        poll_fn(|cx| self.0.poll_recv(cx)).await
+    }
+}
+
+impl AsyncSendHalf {
+    pub async fn send(&mut self, frame: &CanFdFrame) -> Result<()> {
+        poll_fn(|cx| self.0.poll_send(cx, frame)).await
     }
 }
 
