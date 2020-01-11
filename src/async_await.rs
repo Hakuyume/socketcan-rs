@@ -1,4 +1,4 @@
-use crate::{CanFdFrame, CanSocket};
+use crate::CanFdFrame;
 use futures::future::poll_fn;
 use futures::ready;
 use mio::event::Evented;
@@ -10,13 +10,13 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::io::PollEvented;
 
-pub struct AsyncCanSocket(PollEvented<CanSocket>);
-pub struct AsyncRecvHalf(Arc<AsyncCanSocket>);
-pub struct AsyncSendHalf(Arc<AsyncCanSocket>);
+pub struct CanSocket(PollEvented<crate::CanSocket>);
+pub struct RecvHalf(Arc<CanSocket>);
+pub struct SendHalf(Arc<CanSocket>);
 
-impl AsyncCanSocket {
+impl CanSocket {
     pub fn new() -> Result<Self> {
-        let socket = CanSocket::new()?;
+        let socket = crate::CanSocket::new()?;
         socket.set_nonblocking(true)?;
         Ok(Self(PollEvented::new(socket)?))
     }
@@ -66,25 +66,25 @@ impl AsyncCanSocket {
         }
     }
 
-    pub fn split(self) -> (AsyncRecvHalf, AsyncSendHalf) {
+    pub fn split(self) -> (RecvHalf, SendHalf) {
         let socket = Arc::new(self);
-        (AsyncRecvHalf(socket.clone()), AsyncSendHalf(socket))
+        (RecvHalf(socket.clone()), SendHalf(socket))
     }
 }
 
-impl AsyncRecvHalf {
+impl RecvHalf {
     pub async fn recv(&mut self) -> Result<CanFdFrame> {
         poll_fn(|cx| self.0.poll_recv(cx)).await
     }
 }
 
-impl AsyncSendHalf {
+impl SendHalf {
     pub async fn send(&mut self, frame: &CanFdFrame) -> Result<()> {
         poll_fn(|cx| self.0.poll_send(cx, frame)).await
     }
 }
 
-impl Evented for CanSocket {
+impl Evented for crate::CanSocket {
     fn register(
         &self,
         poll: &mio::Poll,
