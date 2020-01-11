@@ -2,7 +2,8 @@ use crate::CanFdFrame;
 use futures::future::poll_fn;
 use futures::ready;
 use mio::event::Evented;
-use mio::unix::EventedFd;
+use mio::unix::{EventedFd, UnixReady};
+use mio::Ready;
 use mio::{PollOpt, Token};
 use std::io::{ErrorKind, Result};
 use std::os::unix::io::AsRawFd;
@@ -41,10 +42,11 @@ impl CanSocket {
     }
 
     fn poll_recv(&self, cx: &mut Context<'_>) -> Poll<Result<CanFdFrame>> {
-        ready!(self.0.poll_read_ready(cx, mio::Ready::readable()))?;
+        let ready = Ready::readable() | Ready::from(UnixReady::error());
+        ready!(self.0.poll_read_ready(cx, ready))?;
         match self.0.get_ref().recv() {
             Err(e) if e.kind() == ErrorKind::WouldBlock => {
-                self.0.clear_read_ready(cx, mio::Ready::readable())?;
+                self.0.clear_read_ready(cx, ready)?;
                 Poll::Pending
             }
             r => Poll::Ready(r),
@@ -89,7 +91,7 @@ impl Evented for crate::CanSocket {
         &self,
         poll: &mio::Poll,
         token: Token,
-        interest: mio::Ready,
+        interest: Ready,
         opts: PollOpt,
     ) -> Result<()> {
         EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
@@ -99,7 +101,7 @@ impl Evented for crate::CanSocket {
         &self,
         poll: &mio::Poll,
         token: Token,
-        interest: mio::Ready,
+        interest: Ready,
         opts: PollOpt,
     ) -> Result<()> {
         EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
