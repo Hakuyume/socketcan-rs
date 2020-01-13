@@ -6,19 +6,11 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-default = ["async_await"]
-async_await = ["futures", "mio", "tokio"]
-
 [dependencies]
-futures = { version = "0.3", optional = true }
 libc = "0.2"
-mio = { version = "0.6", optional = true }
-tokio = { version = "0.2", features = ["io-driver"], optional = true }
 
 [build-dependencies]
 bindgen = "0.52"
 
 [dev-dependencies]
 structopt = "0.3"
-tokio = { version = "0.2", features = ["macros", "rt-core", "time"] }

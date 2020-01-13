@@ -1,5 +1,3 @@
-#[cfg(feature = "async_await")]
-pub mod async_await;
 mod can_fd_frame;
 mod can_frame;
 mod can_socket;
