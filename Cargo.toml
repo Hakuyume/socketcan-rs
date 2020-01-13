@@ -8,10 +8,10 @@ edition = "2018"
 
 [features]
 default = ["async_await"]
-async_await = ["mio", "tokio"]
+async_await = ["futures", "mio", "tokio"]
 
 [dependencies]
-futures = "0.3"
+futures = { version = "0.3", optional = true }
 libc = "0.2"
 mio = { version = "0.6", optional = true }
 tokio = { version = "0.2", features = ["io-driver"], optional = true }
