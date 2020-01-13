@@ -4,16 +4,14 @@ use std::mem::MaybeUninit;
 pub struct CanFrame(pub(crate) sys::can_frame);
 
 impl CanFrame {
-    pub fn new(can_id: u32, data: &[u8]) -> Option<Self> {
+    pub fn new(can_id: u32, data: &[u8]) -> Self {
+        assert!(data.len() <= sys::CAN_MAX_DLEN as _);
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = can_id;
-            (*inner.as_mut_ptr()).can_dlc = match data.len() {
-                len @ 0..=8 => len as _,
-                _ => return None,
-            };
+            (*inner.as_mut_ptr()).can_dlc = data.len() as _;
             (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
-            Some(Self(inner.assume_init()))
+            Self(inner.assume_init())
         }
     }
 

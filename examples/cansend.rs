@@ -42,16 +42,14 @@ fn parse_frame(input: &str) -> IResult<&str, Frame> {
     match sep.len() {
         1 => {
             let (input, data) = parse_data(input)?;
-            let frame = CanFrame::new(can_id, &data).unwrap();
-            Ok((input, Frame::Can(frame)))
+            Ok((input, Frame::Can(CanFrame::new(can_id, &data))))
         }
         2 => {
             let (input, flags) = map_res(take_while_m_n(1, 1, is_digit), |s| {
                 u8::from_str_radix(s, 16)
             })(input)?;
             let (input, data) = parse_data(input)?;
-            let frame = CanFdFrame::new(can_id, flags, &data).unwrap();
-            Ok((input, Frame::CanFd(frame)))
+            Ok((input, Frame::CanFd(CanFdFrame::new(can_id, flags, &data))))
         }
         _ => unreachable!(),
     }
