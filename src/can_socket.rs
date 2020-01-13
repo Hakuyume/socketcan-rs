@@ -1,66 +1,54 @@
 use crate::{linux_can, CanFdFrame};
-use std::ffi::CString;
+use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem;
 use std::os::raw::c_int;
-use std::os::unix::io::{AsRawFd, RawFd};
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 pub struct CanSocket(RawFd);
 
 impl CanSocket {
-    pub fn new() -> Result<Self> {
-        let socket = unsafe { libc::socket(libc::PF_CAN, libc::SOCK_RAW, linux_can::CAN_RAW as _) };
-        if socket == -1 {
-            return Err(Error::last_os_error());
-        }
-        Ok(Self(socket))
-    }
-
-    pub fn bind<I>(&self, ifname: I) -> Result<()>
+    pub fn bind<I>(ifname: I) -> Result<Self>
     where
-        I: Into<Vec<u8>>,
+        I: AsRef<CStr>,
     {
-        let ifname = CString::new(ifname)?;
-        let ifindex = unsafe { libc::if_nametoindex(ifname.as_ptr()) };
+        let ifindex = unsafe { libc::if_nametoindex(ifname.as_ref().as_ptr()) };
         if ifindex == 0 {
             return Err(Error::last_os_error());
         }
+
+        let fd = unsafe { libc::socket(libc::PF_CAN, libc::SOCK_RAW, linux_can::CAN_RAW as _) };
+        if fd == -1 {
+            return Err(Error::last_os_error());
+        }
+        let socket = Self(fd);
 
         let mut address =
             unsafe { mem::MaybeUninit::<linux_can::sockaddr_can>::zeroed().assume_init() };
         address.can_family = libc::AF_CAN as _;
         address.can_ifindex = ifindex as _;
-
         if unsafe {
             libc::bind(
-                self.as_raw_fd(),
+                socket.as_raw_fd(),
                 &address as *const _ as _,
                 mem::size_of_val(&address) as _,
             ) != 0
         } {
             return Err(Error::last_os_error());
         }
-        Ok(())
+        Ok(socket)
     }
 
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
-        let fl = unsafe { libc::fcntl(self.as_raw_fd(), libc::F_GETFL) };
-        if fl < 0 {
-            return Err(Error::last_os_error());
-        }
-        let fl = if nonblocking {
-            fl | libc::O_NONBLOCK
-        } else {
-            fl & !libc::O_NONBLOCK
-        };
-        if unsafe { libc::fcntl(self.as_raw_fd(), libc::F_SETFL, fl) } != 0 {
+        let opt = nonblocking as c_int;
+        if unsafe { libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &opt) } != 0 {
             return Err(Error::last_os_error());
         }
         Ok(())
     }
 
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
-        let opt: c_int = if enable { 1 } else { 0 };
+        let opt = enable as c_int;
         if unsafe {
             libc::setsockopt(
                 self.as_raw_fd(),
@@ -77,7 +65,7 @@ impl CanSocket {
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
-        let opt: c_int = if enable { 1 } else { 0 };
+        let opt = enable as c_int;
         if unsafe {
             libc::setsockopt(
                 self.as_raw_fd(),
@@ -134,5 +122,19 @@ impl Drop for CanSocket {
 impl AsRawFd for CanSocket {
     fn as_raw_fd(&self) -> RawFd {
         self.0
+    }
+}
+
+impl FromRawFd for CanSocket {
+    unsafe fn from_raw_fd(fd: RawFd) -> Self {
+        Self(fd)
+    }
+}
+
+impl IntoRawFd for CanSocket {
+    fn into_raw_fd(self) -> RawFd {
+        let fd = self.0;
+        mem::forget(self);
+        fd
     }
 }

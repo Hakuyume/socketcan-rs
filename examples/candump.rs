@@ -1,4 +1,5 @@
 use socketcan::CanSocket;
+use std::ffi::CString;
 use std::io::Result;
 use structopt::StructOpt;
 
@@ -10,9 +11,8 @@ struct Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
 
-    let socket = CanSocket::new()?;
+    let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
     socket.set_fd_frames(true)?;
-    socket.bind(opt.ifname)?;
 
     loop {
         let frame = socket.recv()?;

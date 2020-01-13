@@ -6,6 +6,7 @@ use nom::{
 };
 use socketcan::{CanFdFrame, CanSocket};
 use std::error::Error;
+use std::ffi::CString;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -21,9 +22,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert!(input.is_empty());
     let frame = CanFdFrame::new(can_id, flags, &data).unwrap();
 
-    let socket = CanSocket::new()?;
+    let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
     socket.set_fd_frames(true)?;
-    socket.bind(opt.ifname)?;
     socket.send(&frame)?;
 
     Ok(())
