@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::io::PollEvented;
 
-pub struct CanSocket(PollEvented<crate::CanSocket>);
+pub struct CanSocket(PollEvented<EventedCanSocket>);
 pub struct RecvHalf(Arc<CanSocket>);
 pub struct SendHalf(Arc<CanSocket>);
 
@@ -23,15 +23,15 @@ impl CanSocket {
     {
         let socket = crate::CanSocket::bind(ifname)?;
         socket.set_nonblocking(true)?;
-        Ok(Self(PollEvented::new(socket)?))
+        Ok(Self(PollEvented::new(EventedCanSocket(socket))?))
     }
 
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
-        self.0.get_ref().set_recv_own_msgs(enable)
+        self.0.get_ref().0.set_recv_own_msgs(enable)
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
-        self.0.get_ref().set_fd_frames(enable)
+        self.0.get_ref().0.set_fd_frames(enable)
     }
 
     pub async fn recv(&mut self) -> Result<CanFdFrame> {
@@ -41,7 +41,7 @@ impl CanSocket {
     fn poll_recv(&self, cx: &mut Context<'_>) -> Poll<Result<CanFdFrame>> {
         let ready = Ready::readable() | Ready::from(UnixReady::error());
         ready!(self.0.poll_read_ready(cx, ready))?;
-        match self.0.get_ref().recv() {
+        match self.0.get_ref().0.recv() {
             Err(e) if e.kind() == ErrorKind::WouldBlock => {
                 self.0.clear_read_ready(cx, ready)?;
                 Poll::Pending
@@ -56,7 +56,7 @@ impl CanSocket {
 
     fn poll_send(&self, cx: &mut Context<'_>, frame: &CanFdFrame) -> Poll<Result<()>> {
         ready!(self.0.poll_write_ready(cx))?;
-        match self.0.get_ref().send(frame) {
+        match self.0.get_ref().0.send(frame) {
             Err(e) if e.kind() == ErrorKind::WouldBlock => {
                 self.0.clear_write_ready(cx)?;
                 Poll::Pending
@@ -83,7 +83,9 @@ impl SendHalf {
     }
 }
 
-impl Evented for crate::CanSocket {
+struct EventedCanSocket(crate::CanSocket);
+
+impl Evented for EventedCanSocket {
     fn register(
         &self,
         poll: &mio::Poll,
@@ -91,7 +93,7 @@ impl Evented for crate::CanSocket {
         interest: Ready,
         opts: PollOpt,
     ) -> Result<()> {
-        EventedFd(&self.as_raw_fd()).register(poll, token, interest, opts)
+        EventedFd(&self.0.as_raw_fd()).register(poll, token, interest, opts)
     }
 
     fn reregister(
@@ -101,10 +103,10 @@ impl Evented for crate::CanSocket {
         interest: Ready,
         opts: PollOpt,
     ) -> Result<()> {
-        EventedFd(&self.as_raw_fd()).reregister(poll, token, interest, opts)
+        EventedFd(&self.0.as_raw_fd()).reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &mio::Poll) -> Result<()> {
-        EventedFd(&self.as_raw_fd()).deregister(poll)
+        EventedFd(&self.0.as_raw_fd()).deregister(poll)
     }
 }
