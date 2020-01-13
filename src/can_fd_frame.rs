@@ -9,8 +9,8 @@ impl CanFdFrame {
         let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = can_id;
-            (*inner.as_mut_ptr()).flags = flags;
             (*inner.as_mut_ptr()).len = data.len() as _;
+            (*inner.as_mut_ptr()).flags = flags;
             (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
             Self(inner.assume_init())
         }

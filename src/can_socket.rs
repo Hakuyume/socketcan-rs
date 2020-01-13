@@ -24,9 +24,12 @@ impl CanSocket {
         }
         let socket = Self(fd);
 
-        let mut address = unsafe { MaybeUninit::<sys::sockaddr_can>::zeroed().assume_init() };
-        address.can_family = libc::AF_CAN as _;
-        address.can_ifindex = ifindex as _;
+        let mut address = MaybeUninit::<sys::sockaddr_can>::zeroed();
+        let address = unsafe {
+            (*address.as_mut_ptr()).can_family = libc::AF_CAN as _;
+            (*address.as_mut_ptr()).address.can_ifindex = ifindex as _;
+            address.assume_init()
+        };
         if unsafe {
             libc::bind(
                 socket.as_raw_fd(),
