@@ -1,4 +1,4 @@
-use socketcan::{CanSocket, Frame};
+use socketcan::CanSocket;
 use std::ffi::CString;
 use std::io::Result;
 use structopt::StructOpt;
@@ -15,18 +15,6 @@ fn main() -> Result<()> {
     socket.set_fd_frames(true)?;
 
     loop {
-        match socket.recv()? {
-            Frame::Can(frame) => println!("{:03X}#{}", frame.can_id(), hex(frame.data())),
-            Frame::CanFd(frame) => println!(
-                "{:03X}##{:X}{}",
-                frame.can_id(),
-                frame.flags(),
-                hex(frame.data())
-            ),
-        }
+        println!("{:?}", socket.recv()?)
     }
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.into_iter().map(|b| format!("{:02X}", b)).collect()
 }

@@ -20,6 +20,5 @@ tokio = { version = "0.2", features = ["io-driver"], optional = true }
 bindgen = "0.52"
 
 [dev-dependencies]
-nom = "5.1"
 structopt = "0.3"
 tokio = { version = "0.2", features = ["macros", "rt-core", "time"] }

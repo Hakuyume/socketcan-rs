@@ -1,56 +1,48 @@
-use nom::bytes::complete::{tag, take_while, take_while_m_n};
-use nom::combinator::map_res;
-use nom::multi::{many0, many_m_n};
-use nom::IResult;
 use socketcan::{CanFdFrame, CanFrame, CanSocket, Frame};
-use std::error::Error;
 use std::ffi::CString;
+use std::io;
+use std::num::ParseIntError;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Opt {
     ifname: String,
-    frame: String,
+    #[structopt(long, parse(try_from_str = parse_flags))]
+    flags: Option<u8>,
+    #[structopt(parse(try_from_str = parse_can_id))]
+    can_id: u32,
+    #[structopt(parse(try_from_str = parse_data))]
+    data: std::vec::Vec<u8>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> io::Result<()> {
     let opt = Opt::from_args();
 
-    let (input, frame) = parse_frame(&opt.frame).unwrap();
-    assert!(input.is_empty());
-
     let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
-    socket.set_fd_frames(true)?;
+    let frame = match opt.flags {
+        Some(flags) => {
+            socket.set_fd_frames(true)?;
+            Frame::CanFd(CanFdFrame::new(opt.can_id, flags, &opt.data))
+        }
+        None => Frame::Can(CanFrame::new(opt.can_id, &opt.data)),
+    };
     socket.send(&frame)?;
 
     Ok(())
 }
 
-fn is_digit(c: char) -> bool {
-    c.is_digit(16)
+fn parse_can_id(src: &str) -> Result<u32, ParseIntError> {
+    u32::from_str_radix(src, 16)
 }
 
-fn parse_data(input: &str) -> IResult<&str, Vec<u8>> {
-    many0(map_res(take_while_m_n(2, 2, is_digit), |s| {
-        u8::from_str_radix(s, 16)
-    }))(input)
+fn parse_flags(src: &str) -> Result<u8, ParseIntError> {
+    u8::from_str_radix(src, 16)
 }
 
-fn parse_frame(input: &str) -> IResult<&str, Frame> {
-    let (input, can_id) = map_res(take_while(is_digit), |s| u32::from_str_radix(s, 16))(input)?;
-    let (input, sep) = many_m_n(1, 2, tag("#"))(input)?;
-    match sep.len() {
-        1 => {
-            let (input, data) = parse_data(input)?;
-            Ok((input, Frame::Can(CanFrame::new(can_id, &data))))
-        }
-        2 => {
-            let (input, flags) = map_res(take_while_m_n(1, 1, is_digit), |s| {
-                u8::from_str_radix(s, 16)
-            })(input)?;
-            let (input, data) = parse_data(input)?;
-            Ok((input, Frame::CanFd(CanFdFrame::new(can_id, flags, &data))))
-        }
-        _ => unreachable!(),
-    }
+fn parse_data(src: &str) -> Result<Vec<u8>, ParseIntError> {
+    src.chars()
+        .collect::<Vec<_>>()
+        .chunks(2)
+        .map(|src| u8::from_str_radix(&src.iter().collect::<String>(), 16))
+        .collect()
 }
