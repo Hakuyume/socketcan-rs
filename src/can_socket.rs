@@ -86,22 +86,19 @@ impl CanSocket {
 
     pub fn recv(&self) -> Result<Frame> {
         assert!(size_of::<sys::can_frame>() <= size_of::<sys::canfd_frame>());
-        let mut buf = MaybeUninit::<[u8; size_of::<sys::canfd_frame>()]>::uninit();
-        let len = unsafe { libc::read(self.as_raw_fd(), buf.as_mut_ptr() as _, size_of_val(&buf)) }
-            as usize;
+        let mut temp = MaybeUninit::<sys::canfd_frame>::uninit();
+        let len =
+            unsafe { libc::read(self.as_raw_fd(), temp.as_mut_ptr() as _, size_of_val(&temp)) }
+                as usize;
         if len == size_of::<sys::can_frame>() {
             let mut frame = MaybeUninit::uninit();
             let frame = unsafe {
-                ptr::copy_nonoverlapping(buf.as_ptr() as _, frame.as_mut_ptr(), 1);
+                ptr::copy_nonoverlapping(temp.as_ptr() as _, frame.as_mut_ptr(), 1);
                 frame.assume_init()
             };
             Ok(Frame::Can(CanFrame(frame)))
         } else if len == size_of::<sys::canfd_frame>() {
-            let mut frame = MaybeUninit::uninit();
-            let frame = unsafe {
-                ptr::copy_nonoverlapping(buf.as_ptr() as _, frame.as_mut_ptr(), 1);
-                frame.assume_init()
-            };
+            let frame = unsafe { temp.assume_init() };
             Ok(Frame::CanFd(CanFdFrame(frame)))
         } else {
             Err(Error::last_os_error())
