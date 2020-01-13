@@ -1,4 +1,4 @@
-use crate::CanFdFrame;
+use crate::Frame;
 use futures::future::poll_fn;
 use futures::ready;
 use mio::event::Evented;
@@ -34,11 +34,11 @@ impl CanSocket {
         self.0.get_ref().0.set_fd_frames(enable)
     }
 
-    pub async fn recv(&mut self) -> Result<CanFdFrame> {
+    pub async fn recv(&mut self) -> Result<Frame> {
         poll_fn(|cx| self.poll_recv(cx)).await
     }
 
-    fn poll_recv(&self, cx: &mut Context<'_>) -> Poll<Result<CanFdFrame>> {
+    fn poll_recv(&self, cx: &mut Context<'_>) -> Poll<Result<Frame>> {
         let ready = Ready::readable() | Ready::from(UnixReady::error());
         ready!(self.0.poll_read_ready(cx, ready))?;
         match self.0.get_ref().0.recv() {
@@ -50,11 +50,11 @@ impl CanSocket {
         }
     }
 
-    pub async fn send(&mut self, frame: &CanFdFrame) -> Result<()> {
+    pub async fn send(&mut self, frame: &Frame) -> Result<()> {
         poll_fn(|cx| self.poll_send(cx, frame)).await
     }
 
-    fn poll_send(&self, cx: &mut Context<'_>, frame: &CanFdFrame) -> Poll<Result<()>> {
+    fn poll_send(&self, cx: &mut Context<'_>, frame: &Frame) -> Poll<Result<()>> {
         ready!(self.0.poll_write_ready(cx))?;
         match self.0.get_ref().0.send(frame) {
             Err(e) if e.kind() == ErrorKind::WouldBlock => {
@@ -72,13 +72,13 @@ impl CanSocket {
 }
 
 impl RecvHalf {
-    pub async fn recv(&mut self) -> Result<CanFdFrame> {
+    pub async fn recv(&mut self) -> Result<Frame> {
         poll_fn(|cx| self.0.poll_recv(cx)).await
     }
 }
 
 impl SendHalf {
-    pub async fn send(&mut self, frame: &CanFdFrame) -> Result<()> {
+    pub async fn send(&mut self, frame: &Frame) -> Result<()> {
         poll_fn(|cx| self.0.poll_send(cx, frame)).await
     }
 }
