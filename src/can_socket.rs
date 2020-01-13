@@ -1,4 +1,4 @@
-use crate::{linux_can, CanFdFrame, CanFrame, Frame};
+use crate::{sys, CanFdFrame, CanFrame, Frame};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
@@ -18,13 +18,13 @@ impl CanSocket {
             return Err(Error::last_os_error());
         }
 
-        let fd = unsafe { libc::socket(libc::PF_CAN, libc::SOCK_RAW, linux_can::CAN_RAW as _) };
+        let fd = unsafe { libc::socket(libc::PF_CAN, libc::SOCK_RAW, sys::CAN_RAW as _) };
         if fd == -1 {
             return Err(Error::last_os_error());
         }
         let socket = Self(fd);
 
-        let mut address = unsafe { MaybeUninit::<linux_can::sockaddr_can>::zeroed().assume_init() };
+        let mut address = unsafe { MaybeUninit::<sys::sockaddr_can>::zeroed().assume_init() };
         address.can_family = libc::AF_CAN as _;
         address.can_ifindex = ifindex as _;
         if unsafe {
@@ -52,8 +52,8 @@ impl CanSocket {
         if unsafe {
             libc::setsockopt(
                 self.as_raw_fd(),
-                linux_can::SOL_CAN_RAW as _,
-                linux_can::CAN_RAW_RECV_OWN_MSGS as _,
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_RECV_OWN_MSGS as _,
                 &opt as *const _ as _,
                 size_of_val(&opt) as _,
             )
@@ -69,8 +69,8 @@ impl CanSocket {
         if unsafe {
             libc::setsockopt(
                 self.as_raw_fd(),
-                linux_can::SOL_CAN_RAW as _,
-                linux_can::CAN_RAW_FD_FRAMES as _,
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_FD_FRAMES as _,
                 &opt as *const _ as _,
                 size_of_val(&opt) as _,
             )
@@ -82,24 +82,24 @@ impl CanSocket {
     }
 
     pub fn recv(&self) -> Result<Frame> {
-        assert!(size_of::<CanFrame>() <= size_of::<CanFdFrame>());
-        let mut buf = MaybeUninit::<[u8; size_of::<CanFdFrame>()]>::uninit();
+        assert!(size_of::<sys::can_frame>() <= size_of::<sys::canfd_frame>());
+        let mut buf = MaybeUninit::<[u8; size_of::<sys::canfd_frame>()]>::uninit();
         let len = unsafe { libc::read(self.as_raw_fd(), buf.as_mut_ptr() as _, size_of_val(&buf)) }
             as usize;
-        if len == size_of::<CanFrame>() {
+        if len == size_of::<sys::can_frame>() {
             let mut frame = MaybeUninit::uninit();
             let frame = unsafe {
                 ptr::copy_nonoverlapping(buf.as_ptr() as _, frame.as_mut_ptr(), 1);
                 frame.assume_init()
             };
-            Ok(Frame::Can(frame))
-        } else if len == size_of::<CanFdFrame>() {
+            Ok(Frame::Can(CanFrame(frame)))
+        } else if len == size_of::<sys::canfd_frame>() {
             let mut frame = MaybeUninit::uninit();
             let frame = unsafe {
                 ptr::copy_nonoverlapping(buf.as_ptr() as _, frame.as_mut_ptr(), 1);
                 frame.assume_init()
             };
-            Ok(Frame::CanFd(frame))
+            Ok(Frame::CanFd(CanFdFrame(frame)))
         } else {
             Err(Error::last_os_error())
         }
@@ -107,8 +107,8 @@ impl CanSocket {
 
     pub fn send(&self, frame: &Frame) -> Result<()> {
         let (frame, len) = match frame {
-            Frame::Can(frame) => (frame as *const _ as _, size_of_val(frame)),
-            Frame::CanFd(frame) => (frame as *const _ as _, size_of_val(frame)),
+            Frame::Can(CanFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
+            Frame::CanFd(CanFdFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
         };
         if unsafe { libc::write(self.as_raw_fd(), frame, len as _) } as usize != len {
             return Err(Error::last_os_error());

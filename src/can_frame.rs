@@ -1,12 +1,11 @@
-use crate::linux_can::can_frame;
+use crate::sys;
 use std::mem::MaybeUninit;
 
-#[repr(C)]
-pub struct CanFrame(can_frame);
+pub struct CanFrame(pub(crate) sys::can_frame);
 
 impl CanFrame {
     pub fn new(can_id: u32, data: &[u8]) -> Option<Self> {
-        let mut inner = MaybeUninit::<can_frame>::zeroed();
+        let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = can_id;
             (*inner.as_mut_ptr()).can_dlc = match data.len() {
