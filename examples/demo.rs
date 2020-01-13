@@ -26,15 +26,7 @@ async fn main() -> Result<()> {
 
 async fn recv(mut socket: RecvHalf) -> Result<()> {
     loop {
-        match socket.recv().await? {
-            Frame::Can(frame) => println!("{:03X}#{}", frame.can_id(), hex(frame.data())),
-            Frame::CanFd(frame) => println!(
-                "{:03X}##{:X}{}",
-                frame.can_id(),
-                frame.flags(),
-                hex(frame.data())
-            ),
-        }
+        println!("{:?}", socket.recv().await?)
     }
 }
 
@@ -50,8 +42,4 @@ async fn send(mut socket: SendHalf) -> Result<()> {
         count += 1;
         delay_for(Duration::new(1, 0)).await;
     }
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.into_iter().map(|b| format!("{:02X}", b)).collect()
 }
