@@ -1,9 +1,7 @@
-use nom::{
-    bytes::complete::{tag, take_while, take_while_m_n},
-    combinator::map_res,
-    multi::many0,
-    IResult,
-};
+use nom::bytes::complete::{tag, take_while, take_while_m_n};
+use nom::combinator::map_res;
+use nom::multi::many0;
+use nom::IResult;
 use socketcan::{CanFdFrame, CanSocket};
 use std::error::Error;
 use std::ffi::CString;
