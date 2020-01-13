@@ -5,6 +5,7 @@ use mio::event::Evented;
 use mio::unix::{EventedFd, UnixReady};
 use mio::Ready;
 use mio::{PollOpt, Token};
+use std::ffi::CStr;
 use std::io::{ErrorKind, Result};
 use std::os::unix::io::AsRawFd;
 use std::sync::Arc;
@@ -16,17 +17,13 @@ pub struct RecvHalf(Arc<CanSocket>);
 pub struct SendHalf(Arc<CanSocket>);
 
 impl CanSocket {
-    pub fn new() -> Result<Self> {
-        let socket = crate::CanSocket::new()?;
+    pub fn bind<I>(ifname: I) -> Result<Self>
+    where
+        I: AsRef<CStr>,
+    {
+        let socket = crate::CanSocket::bind(ifname)?;
         socket.set_nonblocking(true)?;
         Ok(Self(PollEvented::new(socket)?))
-    }
-
-    pub fn bind<I>(&self, ifname: I) -> Result<()>
-    where
-        I: Into<Vec<u8>>,
-    {
-        self.0.get_ref().bind(ifname)
     }
 
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {

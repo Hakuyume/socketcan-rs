@@ -1,6 +1,7 @@
 use futures::future::try_join;
 use socketcan::async_await::{CanSocket, RecvHalf, SendHalf};
 use socketcan::CanFdFrame;
+use std::ffi::CString;
 use std::io::Result;
 use structopt::StructOpt;
 use tokio::time::{delay_for, Duration};
@@ -14,10 +15,9 @@ struct Opt {
 async fn main() -> Result<()> {
     let opt = Opt::from_args();
 
-    let socket = CanSocket::new()?;
+    let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
     socket.set_recv_own_msgs(true)?;
     socket.set_fd_frames(true)?;
-    socket.bind(opt.ifname)?;
 
     let (rx, tx) = socket.split();
     try_join(recv(rx), send(tx)).await?;
