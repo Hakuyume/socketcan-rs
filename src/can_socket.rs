@@ -27,7 +27,7 @@ impl CanSocket {
         let mut address = MaybeUninit::<sys::sockaddr_can>::zeroed();
         let address = unsafe {
             (*address.as_mut_ptr()).can_family = libc::AF_CAN as _;
-            (*address.as_mut_ptr()).address.can_ifindex = ifindex as _;
+            (*address.as_mut_ptr()).can_ifindex = ifindex as _;
             address.assume_init()
         };
         if unsafe {
