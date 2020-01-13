@@ -1,6 +1,8 @@
 use crate::sys;
+use std::fmt;
 use std::mem::MaybeUninit;
 
+#[derive(Clone, Copy)]
 pub struct CanFrame(pub(crate) sys::can_frame);
 
 impl CanFrame {
@@ -21,5 +23,16 @@ impl CanFrame {
 
     pub fn data(&self) -> &[u8] {
         &self.0.data[..self.0.can_dlc as _]
+    }
+}
+
+impl fmt::Debug for CanFrame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "CanFrame {{ can_id: {:?}, data: {:?} }}",
+            self.can_id(),
+            self.data()
+        )
     }
 }
