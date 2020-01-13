@@ -4,7 +4,6 @@ use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_int;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
-use std::ptr;
 
 pub struct CanSocket(RawFd);
 
@@ -85,20 +84,24 @@ impl CanSocket {
     }
 
     pub fn recv(&self) -> Result<Frame> {
-        assert!(size_of::<sys::can_frame>() <= size_of::<sys::canfd_frame>());
-        let mut temp = MaybeUninit::<sys::canfd_frame>::uninit();
-        let len =
-            unsafe { libc::read(self.as_raw_fd(), temp.as_mut_ptr() as _, size_of_val(&temp)) }
-                as usize;
+        #[repr(C)]
+        union Buffer {
+            can: sys::can_frame,
+            can_fd: sys::canfd_frame,
+        }
+        let mut frame = MaybeUninit::<Buffer>::uninit();
+        let len = unsafe {
+            libc::read(
+                self.as_raw_fd(),
+                frame.as_mut_ptr() as _,
+                size_of_val(&frame),
+            )
+        } as usize;
         if len == size_of::<sys::can_frame>() {
-            let mut frame = MaybeUninit::uninit();
-            let frame = unsafe {
-                ptr::copy_nonoverlapping(temp.as_ptr() as _, frame.as_mut_ptr(), 1);
-                frame.assume_init()
-            };
+            let frame = unsafe { frame.assume_init().can };
             Ok(Frame::Can(CanFrame(frame)))
         } else if len == size_of::<sys::canfd_frame>() {
-            let frame = unsafe { temp.assume_init() };
+            let frame = unsafe { frame.assume_init().can_fd };
             Ok(Frame::CanFd(CanFdFrame(frame)))
         } else {
             Err(Error::last_os_error())
