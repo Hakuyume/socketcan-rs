@@ -85,18 +85,13 @@ impl CanSocket {
 
     pub fn recv(&self) -> Result<Frame> {
         #[repr(C)]
-        union Buffer {
+        union F {
             can: sys::can_frame,
             can_fd: sys::canfd_frame,
         }
-        let mut frame = MaybeUninit::<Buffer>::uninit();
-        let len = unsafe {
-            libc::read(
-                self.as_raw_fd(),
-                frame.as_mut_ptr() as _,
-                size_of_val(&frame),
-            )
-        } as usize;
+        let mut frame = MaybeUninit::<F>::uninit();
+        let len = unsafe { libc::read(self.as_raw_fd(), frame.as_mut_ptr() as _, size_of::<F>()) }
+            as usize;
         if len == size_of::<sys::can_frame>() {
             let frame = unsafe { frame.assume_init().can };
             Ok(Frame::Can(CanFrame(frame)))
