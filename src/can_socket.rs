@@ -108,7 +108,7 @@ impl CanSocket {
             Frame::Can(CanFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
             Frame::CanFd(CanFdFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
         };
-        if unsafe { libc::write(self.as_raw_fd(), frame, len as _) } as usize != len {
+        if unsafe { libc::write(self.as_raw_fd(), frame, len) } as usize != len {
             return Err(Error::last_os_error());
         }
         Ok(())
