@@ -20,21 +20,20 @@ fn main() -> io::Result<()> {
 
     let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
 
-    let is_extended = opt.id >= 2 << 11;
     let frame = match opt.flags {
-        Some(flags) => {
-            socket.set_fd_frames(true)?;
-            if is_extended {
-                CanFrame::FdExtended(CanFdExtendedFrame::new(opt.id, flags, &opt.data))
+        None => {
+            if opt.id < 1 << CanStandardFrame::ID_BITS {
+                CanFrame::Standard(CanStandardFrame::new(opt.id, &opt.data))
             } else {
-                CanFrame::FdStandard(CanFdStandardFrame::new(opt.id, flags, &opt.data))
+                CanFrame::Extended(CanExtendedFrame::new(opt.id, &opt.data))
             }
         }
-        None => {
-            if is_extended {
-                CanFrame::Extended(CanExtendedFrame::new(opt.id, &opt.data))
+        Some(flags) => {
+            socket.set_fd_frames(true)?;
+            if opt.id < 1 << CanFdStandardFrame::ID_BITS {
+                CanFrame::FdStandard(CanFdStandardFrame::new(opt.id, flags, &opt.data))
             } else {
-                CanFrame::Standard(CanStandardFrame::new(opt.id, &opt.data))
+                CanFrame::FdExtended(CanFdExtendedFrame::new(opt.id, flags, &opt.data))
             }
         }
     };
