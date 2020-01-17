@@ -1,4 +1,4 @@
-use socketcan::{CanFdStandardFrame, CanFrame, CanSocket, CanStandardFrame};
+use socketcan::*;
 use std::ffi::CString;
 use std::io::Result;
 use std::sync::Arc;
@@ -29,10 +29,14 @@ fn main() -> Result<()> {
 
     let mut count = 0_u64;
     loop {
-        let frame = if count % 3 != 0 {
-            CanFrame::Standard(CanStandardFrame::new(42, &count.to_be_bytes()))
-        } else {
+        let frame = if count % 15 == 0 {
+            CanFrame::FdExtended(CanFdExtendedFrame::new(42, 0, &count.to_be_bytes()))
+        } else if count % 3 == 0 {
+            CanFrame::Extended(CanExtendedFrame::new(42, &count.to_be_bytes()))
+        } else if count % 5 == 0 {
             CanFrame::FdStandard(CanFdStandardFrame::new(42, 0, &count.to_be_bytes()))
+        } else {
+            CanFrame::Standard(CanStandardFrame::new(42, &count.to_be_bytes()))
         };
         socket.send(&frame)?;
         count += 1;
