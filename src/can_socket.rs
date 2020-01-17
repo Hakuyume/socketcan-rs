@@ -1,4 +1,4 @@
-use crate::{sys, CanFdFrame, CanFrame, Frame};
+use crate::{sys, CanFrame};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
@@ -83,32 +83,28 @@ impl CanSocket {
         Ok(())
     }
 
-    pub fn recv(&self) -> Result<Frame> {
+    pub fn recv(&self) -> Result<CanFrame> {
         #[repr(C)]
         union F {
             can: sys::can_frame,
-            can_fd: sys::canfd_frame,
+            canfd: sys::canfd_frame,
         }
         let mut frame = MaybeUninit::<F>::uninit();
-        let len = unsafe { libc::read(self.as_raw_fd(), frame.as_mut_ptr() as _, size_of::<F>()) }
+        let size = unsafe { libc::read(self.as_raw_fd(), frame.as_mut_ptr() as _, size_of::<F>()) }
             as usize;
-        if len == size_of::<sys::can_frame>() {
-            let frame = unsafe { frame.assume_init().can };
-            Ok(Frame::Can(CanFrame(frame)))
-        } else if len == size_of::<sys::canfd_frame>() {
-            let frame = unsafe { frame.assume_init().can_fd };
-            Ok(Frame::CanFd(CanFdFrame(frame)))
+        if size == size_of::<sys::can_frame>() {
+            Ok(unsafe { frame.assume_init().can }.into())
+        } else if size == size_of::<sys::canfd_frame>() {
+            Ok(unsafe { frame.assume_init().canfd }.into())
         } else {
             Err(Error::last_os_error())
         }
     }
 
-    pub fn send(&self, frame: &Frame) -> Result<()> {
-        let (frame, len) = match frame {
-            Frame::Can(CanFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
-            Frame::CanFd(CanFdFrame(frame)) => (frame as *const _ as _, size_of_val(frame)),
-        };
-        if unsafe { libc::write(self.as_raw_fd(), frame, len) } as usize != len {
+    pub fn send(&self, frame: &CanFrame) -> Result<()> {
+        if unsafe { libc::write(self.as_raw_fd(), frame.as_ptr(), frame.size()) } as usize
+            != frame.size()
+        {
             return Err(Error::last_os_error());
         }
         Ok(())

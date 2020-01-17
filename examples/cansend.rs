@@ -1,4 +1,4 @@
-use socketcan::{CanFdFrame, CanFrame, CanSocket, Frame};
+use socketcan::*;
 use std::ffi::CString;
 use std::io;
 use std::num::ParseIntError;
@@ -9,8 +9,8 @@ struct Opt {
     ifname: String,
     #[structopt(long, parse(try_from_str = parse_flags))]
     flags: Option<u8>,
-    #[structopt(parse(try_from_str = parse_can_id))]
-    can_id: u32,
+    #[structopt(parse(try_from_str = parse_id))]
+    id: u32,
     #[structopt(parse(try_from_str = parse_data))]
     data: std::vec::Vec<u8>,
 }
@@ -19,19 +19,31 @@ fn main() -> io::Result<()> {
     let opt = Opt::from_args();
 
     let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
+
+    let is_extended = opt.id >= 2 << 11;
     let frame = match opt.flags {
         Some(flags) => {
             socket.set_fd_frames(true)?;
-            Frame::CanFd(CanFdFrame::new(opt.can_id, flags, &opt.data))
+            if is_extended {
+                CanFrame::FdExtended(CanFdExtendedFrame::new(opt.id, flags, &opt.data))
+            } else {
+                CanFrame::FdBase(CanFdBaseFrame::new(opt.id, flags, &opt.data))
+            }
         }
-        None => Frame::Can(CanFrame::new(opt.can_id, &opt.data)),
+        None => {
+            if is_extended {
+                CanFrame::Extended(CanExtendedFrame::new(opt.id, &opt.data))
+            } else {
+                CanFrame::Base(CanBaseFrame::new(opt.id, &opt.data))
+            }
+        }
     };
     socket.send(&frame)?;
 
     Ok(())
 }
 
-fn parse_can_id(src: &str) -> Result<u32, ParseIntError> {
+fn parse_id(src: &str) -> Result<u32, ParseIntError> {
     u32::from_str_radix(src, 16)
 }
 

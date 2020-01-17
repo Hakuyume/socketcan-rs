@@ -1,38 +1,60 @@
+mod fd;
+mod legacy;
+
 use crate::sys;
-use std::fmt;
-use std::mem::MaybeUninit;
+pub use fd::*;
+pub use legacy::*;
+use std::mem::size_of_val;
+use std::os::raw::c_void;
 
-#[derive(Clone, Copy)]
-pub struct CanFrame(pub(crate) sys::can_frame);
+#[derive(Clone, Copy, Debug)]
+pub enum CanFrame {
+    Base(CanBaseFrame),
+    Extended(CanExtendedFrame),
+    FdBase(CanFdBaseFrame),
+    FdExtended(CanFdExtendedFrame),
+}
 
-impl CanFrame {
-    pub fn new(can_id: u32, data: &[u8]) -> Self {
-        assert!(data.len() <= sys::CAN_MAX_DLEN as _);
-        let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
-        unsafe {
-            (*inner.as_mut_ptr()).can_id = can_id;
-            (*inner.as_mut_ptr()).can_dlc = data.len() as _;
-            (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
-            Self(inner.assume_init())
+impl From<sys::can_frame> for CanFrame {
+    fn from(frame: sys::can_frame) -> Self {
+        if frame.can_id & sys::CAN_EFF_FLAG == 0 {
+            Self::Base(CanBaseFrame(frame))
+        } else {
+            Self::Extended(CanExtendedFrame(frame))
         }
-    }
-
-    pub fn can_id(&self) -> u32 {
-        self.0.can_id
-    }
-
-    pub fn data(&self) -> &[u8] {
-        &self.0.data[..self.0.can_dlc as _]
     }
 }
 
-impl fmt::Debug for CanFrame {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "CanFrame {{ can_id: {:?}, data: {:?} }}",
-            self.can_id(),
-            self.data()
-        )
+impl From<sys::canfd_frame> for CanFrame {
+    fn from(frame: sys::canfd_frame) -> Self {
+        if frame.can_id & sys::CAN_EFF_FLAG == 0 {
+            Self::FdBase(CanFdBaseFrame(frame))
+        } else {
+            Self::FdExtended(CanFdExtendedFrame(frame))
+        }
+    }
+}
+
+impl CanFrame {
+    pub(crate) fn as_ptr(&self) -> *const c_void {
+        match self {
+            Self::Base(CanBaseFrame(frame)) | Self::Extended(CanExtendedFrame(frame)) => {
+                frame as *const _ as _
+            }
+            Self::FdBase(CanFdBaseFrame(frame)) | Self::FdExtended(CanFdExtendedFrame(frame)) => {
+                frame as *const _ as _
+            }
+        }
+    }
+
+    pub(crate) fn size(&self) -> usize {
+        match self {
+            Self::Base(CanBaseFrame(frame)) | Self::Extended(CanExtendedFrame(frame)) => {
+                size_of_val(frame)
+            }
+            Self::FdBase(CanFdBaseFrame(frame)) | Self::FdExtended(CanFdExtendedFrame(frame)) => {
+                size_of_val(frame)
+            }
+        }
     }
 }
