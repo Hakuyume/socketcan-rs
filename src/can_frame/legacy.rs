@@ -30,13 +30,11 @@ macro_rules! frame {
         }
 
         impl fmt::Debug for $name {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(
-                    f,
-                    concat!(stringify!($name), " {{ id: {:?}, data: {:?} }}"),
-                    self.id(),
-                    self.data()
-                )
+            fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt.debug_struct(stringify!($name))
+                    .field("id", &self.id())
+                    .field("data", &self.data())
+                    .finish()
             }
         }
     };
