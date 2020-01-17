@@ -2,6 +2,8 @@ use crate::sys;
 use std::fmt;
 use std::mem::MaybeUninit;
 
+const DLC: [u8; sys::CANFD_MAX_DLC as _] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48];
+
 macro_rules! frame {
     ($name:ident, $flags:expr, $mask:expr) => {
         #[derive(Clone, Copy)]
@@ -14,7 +16,11 @@ macro_rules! frame {
                 let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
                 unsafe {
                     (*inner.as_mut_ptr()).can_id = id | $flags;
-                    (*inner.as_mut_ptr()).len = data.len() as _;
+                    (*inner.as_mut_ptr()).len = DLC
+                        .iter()
+                        .copied()
+                        .find(|&dlc| dlc as usize >= data.len())
+                        .unwrap_or(sys::CANFD_MAX_DLEN as _);
                     (*inner.as_mut_ptr()).flags = flags;
                     (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
                     Self(inner.assume_init())
