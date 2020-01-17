@@ -10,7 +10,7 @@ edition = "2018"
 libc = "0.2"
 
 [build-dependencies]
-bindgen = { version = "0.52", default-features = false }
+bindgen = { version = "0.52", default-features = false, features = ["runtime"] }
 
 [dev-dependencies]
 structopt = "0.3"
