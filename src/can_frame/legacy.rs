@@ -39,5 +39,5 @@ macro_rules! frame {
         }
     };
 }
-frame!(CanBaseFrame, 0, sys::CAN_SFF_MASK);
+frame!(CanStandardFrame, 0, sys::CAN_SFF_MASK);
 frame!(CanExtendedFrame, sys::CAN_EFF_FLAG, sys::CAN_EFF_MASK);

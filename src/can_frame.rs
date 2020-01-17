@@ -9,16 +9,16 @@ use std::os::raw::c_void;
 
 #[derive(Clone, Copy, Debug)]
 pub enum CanFrame {
-    Base(CanBaseFrame),
+    Standard(CanStandardFrame),
     Extended(CanExtendedFrame),
-    FdBase(CanFdBaseFrame),
+    FdStandard(CanFdStandardFrame),
     FdExtended(CanFdExtendedFrame),
 }
 
 impl From<sys::can_frame> for CanFrame {
     fn from(inner: sys::can_frame) -> Self {
         if inner.can_id & sys::CAN_EFF_FLAG == 0 {
-            Self::Base(CanBaseFrame(inner))
+            Self::Standard(CanStandardFrame(inner))
         } else {
             Self::Extended(CanExtendedFrame(inner))
         }
@@ -28,7 +28,7 @@ impl From<sys::can_frame> for CanFrame {
 impl From<sys::canfd_frame> for CanFrame {
     fn from(inner: sys::canfd_frame) -> Self {
         if inner.can_id & sys::CAN_EFF_FLAG == 0 {
-            Self::FdBase(CanFdBaseFrame(inner))
+            Self::FdStandard(CanFdStandardFrame(inner))
         } else {
             Self::FdExtended(CanFdExtendedFrame(inner))
         }
@@ -38,23 +38,21 @@ impl From<sys::canfd_frame> for CanFrame {
 impl CanFrame {
     pub(crate) fn as_ptr(&self) -> *const c_void {
         match self {
-            Self::Base(CanBaseFrame(inner)) | Self::Extended(CanExtendedFrame(inner)) => {
+            Self::Standard(CanStandardFrame(inner)) | Self::Extended(CanExtendedFrame(inner)) => {
                 inner as *const _ as _
             }
-            Self::FdBase(CanFdBaseFrame(inner)) | Self::FdExtended(CanFdExtendedFrame(inner)) => {
-                inner as *const _ as _
-            }
+            Self::FdStandard(CanFdStandardFrame(inner))
+            | Self::FdExtended(CanFdExtendedFrame(inner)) => inner as *const _ as _,
         }
     }
 
     pub(crate) fn size(&self) -> usize {
         match self {
-            Self::Base(CanBaseFrame(inner)) | Self::Extended(CanExtendedFrame(inner)) => {
+            Self::Standard(CanStandardFrame(inner)) | Self::Extended(CanExtendedFrame(inner)) => {
                 size_of_val(inner)
             }
-            Self::FdBase(CanFdBaseFrame(inner)) | Self::FdExtended(CanFdExtendedFrame(inner)) => {
-                size_of_val(inner)
-            }
+            Self::FdStandard(CanFdStandardFrame(inner))
+            | Self::FdExtended(CanFdExtendedFrame(inner)) => size_of_val(inner),
         }
     }
 }

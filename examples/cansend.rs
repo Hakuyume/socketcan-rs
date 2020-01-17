@@ -27,14 +27,14 @@ fn main() -> io::Result<()> {
             if is_extended {
                 CanFrame::FdExtended(CanFdExtendedFrame::new(opt.id, flags, &opt.data))
             } else {
-                CanFrame::FdBase(CanFdBaseFrame::new(opt.id, flags, &opt.data))
+                CanFrame::FdStandard(CanFdStandardFrame::new(opt.id, flags, &opt.data))
             }
         }
         None => {
             if is_extended {
                 CanFrame::Extended(CanExtendedFrame::new(opt.id, &opt.data))
             } else {
-                CanFrame::Base(CanBaseFrame::new(opt.id, &opt.data))
+                CanFrame::Standard(CanStandardFrame::new(opt.id, &opt.data))
             }
         }
     };
