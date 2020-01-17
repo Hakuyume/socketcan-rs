@@ -18,6 +18,7 @@ pub enum CanFrame {
 
 impl From<sys::can_frame> for CanFrame {
     fn from(inner: sys::can_frame) -> Self {
+        assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
         if inner.can_id & sys::CAN_EFF_FLAG == 0 {
             Self::Standard(CanStandardFrame(inner))
         } else {
@@ -28,6 +29,7 @@ impl From<sys::can_frame> for CanFrame {
 
 impl From<sys::canfd_frame> for CanFrame {
     fn from(inner: sys::canfd_frame) -> Self {
+        assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
         if inner.can_id & sys::CAN_EFF_FLAG == 0 {
             Self::FdStandard(CanFdStandardFrame(inner))
         } else {
