@@ -16,7 +16,7 @@ macro_rules! frame {
             /// # Panics
             ///
             /// Panics if `id` is more than `ID_BITS` bits or `data` is longer than `MAX_DLEN` bytes.
-            pub fn new(id: u32, flags: u8, data: &[u8]) -> Self {
+            pub fn new(id: u32, brs: bool, esi: bool, data: &[u8]) -> Self {
                 assert!(id < 1 << Self::ID_BITS);
                 assert!(data.len() <= Self::MAX_DLEN);
                 let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
@@ -27,7 +27,8 @@ macro_rules! frame {
                         .copied()
                         .find(|&dlc| dlc as usize >= data.len())
                         .unwrap_or(sys::CANFD_MAX_DLEN as _);
-                    (*inner.as_mut_ptr()).flags = flags;
+                    (*inner.as_mut_ptr()).flags = if brs { sys::CANFD_BRS as _ } else { 0 }
+                        | if esi { sys::CANFD_ESI as _ } else { 0 };
                     (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
                     Self(inner.assume_init())
                 }
@@ -37,8 +38,12 @@ macro_rules! frame {
                 self.0.can_id & (1 << Self::ID_BITS) - 1
             }
 
-            pub fn flags(&self) -> u8 {
-                self.0.flags
+            pub fn brs(&self) -> bool {
+                self.0.flags & (sys::CANFD_BRS as u8) != 0
+            }
+
+            pub fn esi(&self) -> bool {
+                self.0.flags & (sys::CANFD_ESI as u8) != 0
             }
 
             pub fn data(&self) -> &[u8] {
@@ -50,7 +55,8 @@ macro_rules! frame {
             fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
                 fmt.debug_struct(stringify!($name))
                     .field("id", &self.id())
-                    .field("flags", &self.flags())
+                    .field("brs", &self.brs())
+                    .field("esi", &self.esi())
                     .field("data", &self.data())
                     .finish()
             }
