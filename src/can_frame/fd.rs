@@ -5,14 +5,20 @@ use std::mem::MaybeUninit;
 const DLC: [u8; sys::CANFD_MAX_DLC as _] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48];
 
 macro_rules! frame {
-    ($name:ident, $flags:expr, $mask:expr) => {
+    ($name:ident, $flags:expr, $bits:expr) => {
         #[derive(Clone, Copy)]
         pub struct $name(pub(super) sys::canfd_frame);
 
         impl $name {
+            pub const ID_BITS: u32 = $bits;
+            pub const MAX_DLEN: usize = sys::CANFD_MAX_DLEN as _;
+
+            /// # Panics
+            ///
+            /// Panics if `id` is more than `ID_BITS` bits or `data` is longer than `MAX_DLEN` bytes.
             pub fn new(id: u32, flags: u8, data: &[u8]) -> Self {
-                assert!(id <= $mask);
-                assert!(data.len() <= sys::CANFD_MAX_DLEN as _);
+                assert!(id < 1 << Self::ID_BITS);
+                assert!(data.len() <= Self::MAX_DLEN);
                 let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
                 unsafe {
                     (*inner.as_mut_ptr()).can_id = id | $flags;
@@ -28,7 +34,7 @@ macro_rules! frame {
             }
 
             pub fn id(&self) -> u32 {
-                self.0.can_id & $mask
+                self.0.can_id & (1 << Self::ID_BITS) - 1
             }
 
             pub fn flags(&self) -> u8 {
@@ -51,5 +57,5 @@ macro_rules! frame {
         }
     };
 }
-frame!(CanFdStandardFrame, 0, sys::CAN_SFF_MASK);
-frame!(CanFdExtendedFrame, sys::CAN_EFF_FLAG, sys::CAN_EFF_MASK);
+frame!(CanFdStandardFrame, 0, sys::CAN_SFF_ID_BITS);
+frame!(CanFdExtendedFrame, sys::CAN_EFF_FLAG, sys::CAN_EFF_ID_BITS);
