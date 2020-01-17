@@ -8,6 +8,7 @@ use std::mem::size_of_val;
 use std::os::raw::c_void;
 
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum CanFrame {
     Standard(CanStandardFrame),
     Extended(CanExtendedFrame),
