@@ -86,7 +86,7 @@ fn test_fd_extended_data_padded() {
 #[test]
 #[should_panic]
 fn test_fd_extended_id_exceed() {
-    CanFdExtendedFrame::new(0x20000000, false, false, &[]);
+    CanFdExtendedFrame::new(0x2000_0000, false, false, &[]);
 }
 
 #[test]

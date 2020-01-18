@@ -58,7 +58,7 @@ fn test_extended() {
 #[test]
 #[should_panic]
 fn test_extended_id_exceed() {
-    CanExtendedFrame::new(0x20000000, &[]);
+    CanExtendedFrame::new(0x2000_0000, &[]);
 }
 
 #[test]
