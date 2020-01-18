@@ -9,6 +9,7 @@ use std::os::raw::c_void;
 
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum CanFrame {
     Standard(CanStandardFrame),
     Extended(CanExtendedFrame),

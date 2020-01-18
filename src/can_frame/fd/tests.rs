@@ -2,14 +2,20 @@ use super::*;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
-macro_rules! impl_distribution {
+macro_rules! impl_traits {
     ($name:ident) => {
+        impl PartialEq for $name {
+            fn eq(&self, other: &Self) -> bool {
+                self.id() == other.id() && self.data() == other.data()
+            }
+        }
+
         impl Distribution<$name> for Standard {
             fn sample<R>(&self, rng: &mut R) -> $name
             where
                 R: Rng + ?Sized,
             {
-                let id = rng.gen::<u32>() & (1 << $name::ID_BITS) - 1;
+                let id = rng.gen_range(0, (1 << $name::ID_BITS) - 1);
                 let data = (0..rng.gen_range(0, $name::MAX_DLEN))
                     .map(|_| rng.gen())
                     .collect::<Vec<_>>();
@@ -18,8 +24,8 @@ macro_rules! impl_distribution {
         }
     };
 }
-impl_distribution!(CanFdStandardFrame);
-impl_distribution!(CanFdExtendedFrame);
+impl_traits!(CanFdStandardFrame);
+impl_traits!(CanFdExtendedFrame);
 
 #[test]
 fn test_fd_standard() {
