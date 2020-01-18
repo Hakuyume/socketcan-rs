@@ -10,13 +10,16 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+#[allow(dead_code)]
 static LOCK: RwLock<()> = RwLock::new(());
 
+#[allow(dead_code)]
 fn ifname() -> CString {
     let ifname = env::var_os("IFNAME").expect("IFNAME environment variable is not set");
     CString::new(ifname.as_bytes()).unwrap()
 }
 
+#[cfg(feature = "test_all")]
 macro_rules! lock {
     (shared) => {
         let _lock = LOCK.read();
@@ -26,6 +29,7 @@ macro_rules! lock {
     };
 }
 
+#[allow(dead_code)]
 fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     struct Context(Arc<AtomicBool>);
     impl Drop for Context {
@@ -60,8 +64,8 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     }
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 fn test_bind() {
     Socket::bind(ifname()).unwrap();
 }
@@ -73,8 +77,8 @@ fn test_bind_no_device() {
     Socket::bind(ifname).unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 #[should_panic(expected = "WouldBlock")]
 fn test_nonblocking() {
     lock!(exclusive);
@@ -84,8 +88,8 @@ fn test_nonblocking() {
     recv(socket, None).unwrap().unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 #[should_panic(expected = "None")]
 fn test_no_nonblocking() {
     lock!(exclusive);
@@ -94,8 +98,8 @@ fn test_no_nonblocking() {
     let _ = recv(socket, None).unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 fn test_recv_own_msgs() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
@@ -106,8 +110,8 @@ fn test_recv_own_msgs() {
     recv(socket, Some(frame)).unwrap().unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 #[should_panic(expected = "None")]
 fn test_no_recv_own_msgs() {
     lock!(shared);
@@ -118,8 +122,8 @@ fn test_no_recv_own_msgs() {
     let _ = recv(socket, Some(frame)).unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 fn test_fd_frames() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
@@ -131,8 +135,8 @@ fn test_fd_frames() {
     recv(socket, Some(frame)).unwrap().unwrap();
 }
 
+#[cfg(feature = "test_all")]
 #[test]
-#[ignore]
 #[should_panic(expected = "InvalidInput")]
 fn test_no_fd_frames() {
     lock!(shared);
