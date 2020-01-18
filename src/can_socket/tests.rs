@@ -61,6 +61,7 @@ fn recv(socket: CanSocket, frame: Option<CanFrame>) -> Option<Result<CanFrame>> 
 }
 
 #[test]
+#[ignore]
 fn test_bind() {
     CanSocket::bind(ifname()).unwrap();
 }
@@ -73,6 +74,7 @@ fn test_bind_no_device() {
 }
 
 #[test]
+#[ignore]
 #[should_panic(expected = "WouldBlock")]
 fn test_nonblocking() {
     lock!(exclusive);
@@ -83,6 +85,7 @@ fn test_nonblocking() {
 }
 
 #[test]
+#[ignore]
 #[should_panic(expected = "None")]
 fn test_no_nonblocking() {
     lock!(exclusive);
@@ -92,6 +95,7 @@ fn test_no_nonblocking() {
 }
 
 #[test]
+#[ignore]
 fn test_recv_own_msgs() {
     lock!(shared);
     let socket = CanSocket::bind(ifname()).unwrap();
@@ -103,6 +107,7 @@ fn test_recv_own_msgs() {
 }
 
 #[test]
+#[ignore]
 #[should_panic(expected = "None")]
 fn test_no_recv_own_msgs() {
     lock!(shared);
@@ -114,6 +119,7 @@ fn test_no_recv_own_msgs() {
 }
 
 #[test]
+#[ignore]
 fn test_fd_frames() {
     lock!(shared);
     let socket = CanSocket::bind(ifname()).unwrap();
@@ -126,6 +132,7 @@ fn test_fd_frames() {
 }
 
 #[test]
+#[ignore]
 #[should_panic(expected = "InvalidInput")]
 fn test_no_fd_frames() {
     lock!(shared);
