@@ -81,12 +81,14 @@ fn test_remote_extended() {
 }
 
 #[test]
-#[should_panic]
 fn test_error() {
     let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
     let inner = unsafe {
         (*inner.as_mut_ptr()).can_id = sys::CAN_ERR_FLAG;
         inner.assume_init()
     };
-    Frame::from_can_frame(inner);
+    match Frame::from_can_frame(inner) {
+        Frame::Error(_) => (),
+        _ => panic!(),
+    }
 }
