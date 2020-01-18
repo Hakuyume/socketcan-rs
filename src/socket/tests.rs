@@ -105,7 +105,7 @@ fn test_recv_own_msgs() {
     let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
-    let frame = Frame::Standard(rand::random());
+    let frame = Frame::Data(rand::random());
     socket.send(&frame).unwrap();
     recv(socket, Some(frame)).unwrap().unwrap();
 }
@@ -117,7 +117,7 @@ fn test_no_recv_own_msgs() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
 
-    let frame = Frame::Standard(rand::random());
+    let frame = Frame::Data(rand::random());
     socket.send(&frame).unwrap();
     let _ = recv(socket, Some(frame)).unwrap();
 }
@@ -130,7 +130,7 @@ fn test_fd_frames() {
     socket.set_recv_own_msgs(true).unwrap();
     socket.set_fd_frames(true).unwrap();
 
-    let frame = Frame::FdStandard(rand::random());
+    let frame = Frame::FdData(rand::random());
     socket.send(&frame).unwrap();
     recv(socket, Some(frame)).unwrap().unwrap();
 }
@@ -143,6 +143,6 @@ fn test_no_fd_frames() {
     let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
-    let frame = Frame::FdStandard(rand::random());
+    let frame = Frame::FdData(rand::random());
     socket.send(&frame).unwrap();
 }

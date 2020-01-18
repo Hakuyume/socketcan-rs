@@ -10,7 +10,7 @@ fn test_standard() {
         inner.assume_init()
     };
     match inner.into() {
-        Frame::Standard(frame) => assert_eq!(frame.id(), 0x42),
+        Frame::Data(frame) => assert_eq!(frame.id(), Id::Standard(0x42)),
         _ => panic!(),
     }
 }
@@ -23,7 +23,7 @@ fn test_extended() {
         inner.assume_init()
     };
     match inner.into() {
-        Frame::Extended(frame) => assert_eq!(frame.id(), 0x4242),
+        Frame::Data(frame) => assert_eq!(frame.id(), Id::Extended(0x4242)),
         _ => panic!(),
     }
 }
@@ -36,7 +36,7 @@ fn test_fd_standard() {
         inner.assume_init()
     };
     match inner.into() {
-        Frame::FdStandard(frame) => assert_eq!(frame.id(), 0x42),
+        Frame::FdData(frame) => assert_eq!(frame.id(), Id::Standard(0x42)),
         _ => panic!(),
     }
 }
@@ -49,7 +49,7 @@ fn test_fd_extended() {
         inner.assume_init()
     };
     match inner.into() {
-        Frame::FdExtended(frame) => assert_eq!(frame.id(), 0x4242),
+        Frame::FdData(frame) => assert_eq!(frame.id(), Id::Extended(0x4242)),
         _ => panic!(),
     }
 }
