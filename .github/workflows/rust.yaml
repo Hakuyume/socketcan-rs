@@ -18,3 +18,16 @@ jobs:
     - uses: actions/checkout@v2
     - run: cargo fmt --verbose -- --check
     - run: cargo clippy --all-targets
+  doc:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: cargo doc --verbose --no-deps
+    - uses: peaceiris/actions-gh-pages@v2
+      env:
+        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        PUBLISH_BRANCH: gh-pages
+        PUBLISH_DIR: ./target/doc/
+      with:
+        forceOrphan: true
