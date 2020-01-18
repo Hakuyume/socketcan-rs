@@ -7,7 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Build
-      run: cargo build --verbose --all-targets
-    - name: Test
-      run: cargo test --verbose
+    - run: cargo build --verbose --all-targets
+    - run: cargo test --verbose
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: cargo fmt --verbose -- --check
+    - run: cargo clippy --all-targets
