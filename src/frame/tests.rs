@@ -9,7 +9,7 @@ fn test_standard() {
         (*inner.as_mut_ptr()).can_id = 0x42;
         inner.assume_init()
     };
-    match inner.into() {
+    match Frame::from_can_frame(inner) {
         Frame::Data(frame) => assert_eq!(frame.id(), Id::Standard(0x42)),
         _ => panic!(),
     }
@@ -22,7 +22,7 @@ fn test_extended() {
         (*inner.as_mut_ptr()).can_id = 0x4242 | sys::CAN_EFF_FLAG;
         inner.assume_init()
     };
-    match inner.into() {
+    match Frame::from_can_frame(inner) {
         Frame::Data(frame) => assert_eq!(frame.id(), Id::Extended(0x4242)),
         _ => panic!(),
     }
@@ -35,7 +35,7 @@ fn test_fd_standard() {
         (*inner.as_mut_ptr()).can_id = 0x42;
         inner.assume_init()
     };
-    match inner.into() {
+    match Frame::from_canfd_frame(inner) {
         Frame::FdData(frame) => assert_eq!(frame.id(), Id::Standard(0x42)),
         _ => panic!(),
     }
@@ -48,7 +48,7 @@ fn test_fd_extended() {
         (*inner.as_mut_ptr()).can_id = 0x4242 | sys::CAN_EFF_FLAG;
         inner.assume_init()
     };
-    match inner.into() {
+    match Frame::from_canfd_frame(inner) {
         Frame::FdData(frame) => assert_eq!(frame.id(), Id::Extended(0x4242)),
         _ => panic!(),
     }
@@ -62,7 +62,7 @@ fn test_remote() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_RTR_FLAG;
         inner.assume_init()
     };
-    Frame::from(inner);
+    Frame::from_can_frame(inner);
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn test_error() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_ERR_FLAG;
         inner.assume_init()
     };
-    Frame::from(inner);
+    Frame::from_can_frame(inner);
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn test_fd_remote() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_RTR_FLAG;
         inner.assume_init()
     };
-    Frame::from(inner);
+    Frame::from_canfd_frame(inner);
 }
 
 #[test]
@@ -95,5 +95,5 @@ fn test_fd_error() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_ERR_FLAG;
         inner.assume_init()
     };
-    Frame::from(inner);
+    Frame::from_canfd_frame(inner);
 }

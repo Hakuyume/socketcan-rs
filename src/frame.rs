@@ -17,21 +17,17 @@ pub enum Frame {
     FdData(FdDataFrame),
 }
 
-impl From<sys::can_frame> for Frame {
-    fn from(inner: sys::can_frame) -> Self {
+impl Frame {
+    pub(crate) fn from_can_frame(inner: sys::can_frame) -> Self {
         assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
         Self::Data(DataFrame(inner))
     }
-}
 
-impl From<sys::canfd_frame> for Frame {
-    fn from(inner: sys::canfd_frame) -> Self {
+    pub(crate) fn from_canfd_frame(inner: sys::canfd_frame) -> Self {
         assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
         Self::FdData(FdDataFrame(inner))
     }
-}
 
-impl Frame {
     pub(crate) fn as_ptr(&self) -> *const c_void {
         match self {
             Self::Data(DataFrame(inner)) => inner as *const _ as _,
