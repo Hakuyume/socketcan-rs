@@ -3,9 +3,9 @@ use crate::sys;
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Id {
-    /// 11 bits identifier
+    /// 11-bit identifier
     Standard(u32),
-    /// 29 bits identifier
+    /// 29-bit identifier
     Extended(u32),
 }
 
