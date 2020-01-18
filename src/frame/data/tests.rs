@@ -1,6 +1,7 @@
 use super::*;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+use crate::sys;
 
 impl PartialEq for DataFrame {
     fn eq(&self, other: &Self) -> bool {
@@ -14,7 +15,7 @@ impl Distribution<DataFrame> for Standard {
         R: Rng + ?Sized,
     {
         let id = rng.gen();
-        let data = (0..rng.gen_range(0, DataFrame::MAX_DLEN))
+        let data = (0..rng.gen_range(0, sys::CAN_MAX_DLEN))
             .map(|_| rng.gen())
             .collect::<Vec<_>>();
         DataFrame::new(id, &data)

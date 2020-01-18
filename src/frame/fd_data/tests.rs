@@ -1,6 +1,7 @@
 use super::*;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+use crate::sys;
 
 impl PartialEq for FdDataFrame {
     fn eq(&self, other: &Self) -> bool {
@@ -14,7 +15,7 @@ impl Distribution<FdDataFrame> for Standard {
         R: Rng + ?Sized,
     {
         let id = rng.gen();
-        let data = (0..rng.gen_range(0, FdDataFrame::MAX_DLEN))
+        let data = (0..rng.gen_range(0, sys::CANFD_MAX_DLEN))
             .map(|_| rng.gen())
             .collect::<Vec<_>>();
         FdDataFrame::new(id, false, false, &data)
