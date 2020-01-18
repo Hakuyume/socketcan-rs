@@ -24,13 +24,13 @@ macro_rules! impl_traits {
         }
     };
 }
-impl_traits!(CanStandardFrame);
-impl_traits!(CanExtendedFrame);
+impl_traits!(StandardFrame);
+impl_traits!(ExtendedFrame);
 
 #[test]
 fn test_standard() {
     let data = rand::random::<[_; 8]>();
-    let frame = CanStandardFrame::new(0x42, &data);
+    let frame = StandardFrame::new(0x42, &data);
     assert_eq!(frame.id(), 0x42);
     assert_eq!(frame.data(), &data);
 }
@@ -38,19 +38,19 @@ fn test_standard() {
 #[test]
 #[should_panic]
 fn test_standard_id_exceed() {
-    CanStandardFrame::new(0x800, &[]);
+    StandardFrame::new(0x800, &[]);
 }
 
 #[test]
 #[should_panic]
 fn test_standard_data_exceed() {
-    CanStandardFrame::new(0x42, &[0; 12]);
+    StandardFrame::new(0x42, &[0; 12]);
 }
 
 #[test]
 fn test_extended() {
     let data = rand::random::<[_; 8]>();
-    let frame = CanExtendedFrame::new(0x4242, &data);
+    let frame = ExtendedFrame::new(0x4242, &data);
     assert_eq!(frame.id(), 0x4242);
     assert_eq!(frame.data(), &data);
 }
@@ -58,11 +58,11 @@ fn test_extended() {
 #[test]
 #[should_panic]
 fn test_extended_id_exceed() {
-    CanExtendedFrame::new(0x2000_0000, &[]);
+    ExtendedFrame::new(0x2000_0000, &[]);
 }
 
 #[test]
 #[should_panic]
 fn test_extended_data_exceed() {
-    CanExtendedFrame::new(0x4242, &[0; 12]);
+    ExtendedFrame::new(0x4242, &[0; 12]);
 }

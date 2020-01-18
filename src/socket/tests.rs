@@ -1,5 +1,5 @@
-use super::CanSocket;
-use crate::CanFrame;
+use super::Socket;
+use crate::Frame;
 use spin::RwLock;
 use std::env;
 use std::ffi::CString;
@@ -26,7 +26,7 @@ macro_rules! lock {
     };
 }
 
-fn recv(socket: CanSocket, frame: Option<CanFrame>) -> Option<Result<CanFrame>> {
+fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     struct Context(Arc<AtomicBool>);
     impl Drop for Context {
         fn drop(&mut self) {
@@ -63,14 +63,14 @@ fn recv(socket: CanSocket, frame: Option<CanFrame>) -> Option<Result<CanFrame>> 
 #[test]
 #[ignore]
 fn test_bind() {
-    CanSocket::bind(ifname()).unwrap();
+    Socket::bind(ifname()).unwrap();
 }
 
 #[test]
 #[should_panic(expected = "No such device")]
 fn test_bind_no_device() {
     let ifname = CString::new("NO DEVICE").unwrap();
-    CanSocket::bind(ifname).unwrap();
+    Socket::bind(ifname).unwrap();
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn test_bind_no_device() {
 #[should_panic(expected = "WouldBlock")]
 fn test_nonblocking() {
     lock!(exclusive);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
     socket.set_nonblocking(true).unwrap();
 
     recv(socket, None).unwrap().unwrap();
@@ -89,7 +89,7 @@ fn test_nonblocking() {
 #[should_panic(expected = "None")]
 fn test_no_nonblocking() {
     lock!(exclusive);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
 
     let _ = recv(socket, None).unwrap();
 }
@@ -98,10 +98,10 @@ fn test_no_nonblocking() {
 #[ignore]
 fn test_recv_own_msgs() {
     lock!(shared);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
-    let frame = CanFrame::Standard(rand::random());
+    let frame = Frame::Standard(rand::random());
     socket.send(&frame).unwrap();
     recv(socket, Some(frame)).unwrap().unwrap();
 }
@@ -111,9 +111,9 @@ fn test_recv_own_msgs() {
 #[should_panic(expected = "None")]
 fn test_no_recv_own_msgs() {
     lock!(shared);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
 
-    let frame = CanFrame::Standard(rand::random());
+    let frame = Frame::Standard(rand::random());
     socket.send(&frame).unwrap();
     let _ = recv(socket, Some(frame)).unwrap();
 }
@@ -122,11 +122,11 @@ fn test_no_recv_own_msgs() {
 #[ignore]
 fn test_fd_frames() {
     lock!(shared);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
     socket.set_fd_frames(true).unwrap();
 
-    let frame = CanFrame::FdStandard(rand::random());
+    let frame = Frame::FdStandard(rand::random());
     socket.send(&frame).unwrap();
     recv(socket, Some(frame)).unwrap().unwrap();
 }
@@ -136,9 +136,9 @@ fn test_fd_frames() {
 #[should_panic(expected = "InvalidInput")]
 fn test_no_fd_frames() {
     lock!(shared);
-    let socket = CanSocket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
-    let frame = CanFrame::FdStandard(rand::random());
+    let frame = Frame::FdStandard(rand::random());
     socket.send(&frame).unwrap();
 }

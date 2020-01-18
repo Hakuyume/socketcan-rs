@@ -1,13 +1,13 @@
-use crate::{sys, CanFrame};
+use crate::{sys, Frame};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_int;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-pub struct CanSocket(RawFd);
+pub struct Socket(RawFd);
 
-impl CanSocket {
+impl Socket {
     pub fn bind<I>(ifname: I) -> Result<Self>
     where
         I: AsRef<CStr>,
@@ -83,7 +83,7 @@ impl CanSocket {
         Ok(())
     }
 
-    pub fn recv(&self) -> Result<CanFrame> {
+    pub fn recv(&self) -> Result<Frame> {
         #[repr(C)]
         union Inner {
             can: sys::can_frame,
@@ -106,7 +106,7 @@ impl CanSocket {
         }
     }
 
-    pub fn send(&self, frame: &CanFrame) -> Result<()> {
+    pub fn send(&self, frame: &Frame) -> Result<()> {
         if unsafe { libc::write(self.as_raw_fd(), frame.as_ptr(), frame.size()) } as usize
             != frame.size()
         {
@@ -116,25 +116,25 @@ impl CanSocket {
     }
 }
 
-impl Drop for CanSocket {
+impl Drop for Socket {
     fn drop(&mut self) {
         unsafe { libc::close(self.as_raw_fd()) };
     }
 }
 
-impl AsRawFd for CanSocket {
+impl AsRawFd for Socket {
     fn as_raw_fd(&self) -> RawFd {
         self.0
     }
 }
 
-impl FromRawFd for CanSocket {
+impl FromRawFd for Socket {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         Self(fd)
     }
 }
 
-impl IntoRawFd for CanSocket {
+impl IntoRawFd for Socket {
     fn into_raw_fd(self) -> RawFd {
         let fd = self.0;
         mem::forget(self);

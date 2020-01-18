@@ -3,14 +3,14 @@
 //! ## Example
 //!
 //! ```no_run
-//! use socketcan::{CanFrame, CanSocket, CanStandardFrame};
+//! use socketcan::{Frame, Socket, StandardFrame};
 //! use std::ffi::CString;
 //!
-//! let socket = CanSocket::bind(CString::new("vcan0")?)?;
+//! let socket = Socket::bind(CString::new("vcan0")?)?;
 //! socket.set_recv_own_msgs(true)?;
 //!
-//! let frame = CanStandardFrame::new(0x42, &[0, 1, 2, 3, 4, 5, 6, 7]);
-//! socket.send(&CanFrame::Standard(frame))?;
+//! let frame = StandardFrame::new(0x42, &[0, 1, 2, 3, 4, 5, 6, 7]);
+//! socket.send(&Frame::Standard(frame))?;
 //!
 //! let frame = socket.recv()?;
 //! println!("{:?}", frame);
@@ -18,9 +18,9 @@
 //! # std::io::Result::Ok(())
 //! ```
 
-mod can_frame;
-mod can_socket;
+mod frame;
+mod socket;
 mod sys;
 
-pub use can_frame::*;
-pub use can_socket::CanSocket;
+pub use frame::*;
+pub use socket::Socket;

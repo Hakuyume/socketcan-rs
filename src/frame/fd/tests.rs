@@ -24,15 +24,15 @@ macro_rules! impl_traits {
         }
     };
 }
-impl_traits!(CanFdStandardFrame);
-impl_traits!(CanFdExtendedFrame);
+impl_traits!(FdStandardFrame);
+impl_traits!(FdExtendedFrame);
 
 #[test]
 fn test_fd_standard() {
     for &brs in &[false, true] {
         for &esi in &[false, true] {
             let data = rand::random::<[_; 8]>();
-            let frame = CanFdStandardFrame::new(0x42, brs, esi, &data);
+            let frame = FdStandardFrame::new(0x42, brs, esi, &data);
             assert_eq!(frame.id(), 0x42);
             assert_eq!(frame.brs(), brs);
             assert_eq!(frame.esi(), esi);
@@ -44,7 +44,7 @@ fn test_fd_standard() {
 #[test]
 fn test_fd_standard_data_padded() {
     let data = rand::random::<[_; 17]>();
-    let frame = CanFdStandardFrame::new(0x42, false, false, &data);
+    let frame = FdStandardFrame::new(0x42, false, false, &data);
     assert_eq!(frame.data().len(), 20);
     assert_eq!(&frame.data()[..17], &data);
 }
@@ -52,13 +52,13 @@ fn test_fd_standard_data_padded() {
 #[test]
 #[should_panic]
 fn test_fd_standard_id_exceed() {
-    CanFdStandardFrame::new(0x800, false, false, &[]);
+    FdStandardFrame::new(0x800, false, false, &[]);
 }
 
 #[test]
 #[should_panic]
 fn test_fd_standard_data_exceed() {
-    CanFdStandardFrame::new(0x42, false, false, &[0; 72]);
+    FdStandardFrame::new(0x42, false, false, &[0; 72]);
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn test_fd_extended() {
     for &brs in &[false, true] {
         for &esi in &[false, true] {
             let data = rand::random::<[_; 8]>();
-            let frame = CanFdExtendedFrame::new(0x4242, brs, esi, &data);
+            let frame = FdExtendedFrame::new(0x4242, brs, esi, &data);
             assert_eq!(frame.id(), 0x4242);
             assert_eq!(frame.brs(), brs);
             assert_eq!(frame.esi(), esi);
@@ -78,7 +78,7 @@ fn test_fd_extended() {
 #[test]
 fn test_fd_extended_data_padded() {
     let data = rand::random::<[_; 17]>();
-    let frame = CanFdExtendedFrame::new(0x4242, false, false, &data);
+    let frame = FdExtendedFrame::new(0x4242, false, false, &data);
     assert_eq!(frame.data().len(), 20);
     assert_eq!(&frame.data()[..17], &data);
 }
@@ -86,11 +86,11 @@ fn test_fd_extended_data_padded() {
 #[test]
 #[should_panic]
 fn test_fd_extended_id_exceed() {
-    CanFdExtendedFrame::new(0x2000_0000, false, false, &[]);
+    FdExtendedFrame::new(0x2000_0000, false, false, &[]);
 }
 
 #[test]
 #[should_panic]
 fn test_fd_extended_data_exceed() {
-    CanFdExtendedFrame::new(0x4242, false, false, &[0; 72]);
+    FdExtendedFrame::new(0x4242, false, false, &[0; 72]);
 }

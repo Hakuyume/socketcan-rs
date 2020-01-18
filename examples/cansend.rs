@@ -18,22 +18,22 @@ struct Opt {
 fn main() -> io::Result<()> {
     let opt = Opt::from_args();
 
-    let socket = CanSocket::bind(CString::new(opt.ifname)?)?;
+    let socket = Socket::bind(CString::new(opt.ifname)?)?;
 
     let frame = match opt.brs {
         None => {
-            if opt.id < 1 << CanStandardFrame::ID_BITS {
-                CanFrame::Standard(CanStandardFrame::new(opt.id, &opt.data))
+            if opt.id < 1 << StandardFrame::ID_BITS {
+                Frame::Standard(StandardFrame::new(opt.id, &opt.data))
             } else {
-                CanFrame::Extended(CanExtendedFrame::new(opt.id, &opt.data))
+                Frame::Extended(ExtendedFrame::new(opt.id, &opt.data))
             }
         }
         Some(brs) => {
             socket.set_fd_frames(true)?;
-            if opt.id < 1 << CanFdStandardFrame::ID_BITS {
-                CanFrame::FdStandard(CanFdStandardFrame::new(opt.id, brs, false, &opt.data))
+            if opt.id < 1 << FdStandardFrame::ID_BITS {
+                Frame::FdStandard(FdStandardFrame::new(opt.id, brs, false, &opt.data))
             } else {
-                CanFrame::FdExtended(CanFdExtendedFrame::new(opt.id, brs, false, &opt.data))
+                Frame::FdExtended(FdExtendedFrame::new(opt.id, brs, false, &opt.data))
             }
         }
     };

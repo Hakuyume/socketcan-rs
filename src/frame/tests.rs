@@ -10,7 +10,7 @@ fn test_standard() {
         inner.assume_init()
     };
     match inner.into() {
-        CanFrame::Standard(frame) => assert_eq!(frame.id(), 0x42),
+        Frame::Standard(frame) => assert_eq!(frame.id(), 0x42),
         _ => panic!(),
     }
 }
@@ -23,7 +23,7 @@ fn test_extended() {
         inner.assume_init()
     };
     match inner.into() {
-        CanFrame::Extended(frame) => assert_eq!(frame.id(), 0x4242),
+        Frame::Extended(frame) => assert_eq!(frame.id(), 0x4242),
         _ => panic!(),
     }
 }
@@ -36,7 +36,7 @@ fn test_fd_standard() {
         inner.assume_init()
     };
     match inner.into() {
-        CanFrame::FdStandard(frame) => assert_eq!(frame.id(), 0x42),
+        Frame::FdStandard(frame) => assert_eq!(frame.id(), 0x42),
         _ => panic!(),
     }
 }
@@ -49,7 +49,7 @@ fn test_fd_extended() {
         inner.assume_init()
     };
     match inner.into() {
-        CanFrame::FdExtended(frame) => assert_eq!(frame.id(), 0x4242),
+        Frame::FdExtended(frame) => assert_eq!(frame.id(), 0x4242),
         _ => panic!(),
     }
 }
@@ -62,7 +62,7 @@ fn test_remote() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_RTR_FLAG;
         inner.assume_init()
     };
-    CanFrame::from(inner);
+    Frame::from(inner);
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn test_error() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_ERR_FLAG;
         inner.assume_init()
     };
-    CanFrame::from(inner);
+    Frame::from(inner);
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn test_fd_remote() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_RTR_FLAG;
         inner.assume_init()
     };
-    CanFrame::from(inner);
+    Frame::from(inner);
 }
 
 #[test]
@@ -95,5 +95,5 @@ fn test_fd_error() {
         (*inner.as_mut_ptr()).can_id = sys::CAN_ERR_FLAG;
         inner.assume_init()
     };
-    CanFrame::from(inner);
+    Frame::from(inner);
 }
