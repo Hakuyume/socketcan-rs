@@ -9,13 +9,11 @@ const DLC: [u8; sys::CANFD_MAX_DLC as _] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 2
 pub struct FdDataFrame(pub(super) sys::canfd_frame);
 
 impl FdDataFrame {
-    pub const MAX_DLEN: usize = sys::CANFD_MAX_DLEN as _;
-
     /// # Panics
     ///
-    /// Panics if `id` is more than `ID_BITS` bits or `data` is longer than `MAX_DLEN` bytes.
+    /// Panics if `id` exceeds its limit or `data` is longer than 64 bytes.
     pub fn new(id: Id, brs: bool, esi: bool, data: &[u8]) -> Self {
-        assert!(data.len() <= Self::MAX_DLEN);
+        assert!(data.len() <= sys::CANFD_MAX_DLEN as _);
         let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();

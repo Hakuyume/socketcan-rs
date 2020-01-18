@@ -7,13 +7,11 @@ use std::mem::MaybeUninit;
 pub struct DataFrame(pub(super) sys::can_frame);
 
 impl DataFrame {
-    pub const MAX_DLEN: usize = sys::CAN_MAX_DLEN as _;
-
     /// # Panics
     ///
-    /// Panics if `id` is more than `ID_BITS` bits or `data` is longer than `MAX_DLEN` bytes.
+    /// Panics if `id` exceeds its limit or `data` is longer than 8 bytes.
     pub fn new(id: Id, data: &[u8]) -> Self {
-        assert!(data.len() <= Self::MAX_DLEN);
+        assert!(data.len() <= sys::CAN_MAX_DLEN as _);
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();
