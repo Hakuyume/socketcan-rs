@@ -141,3 +141,6 @@ impl IntoRawFd for CanSocket {
         fd
     }
 }
+
+#[cfg(test)]
+mod tests;
