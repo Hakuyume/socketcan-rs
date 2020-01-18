@@ -23,41 +23,15 @@ impl Distribution<DataFrame> for Standard {
 }
 
 #[test]
-fn test_standard() {
+fn test_data() {
     let data = rand::random::<[_; 8]>();
-    let frame = DataFrame::new(Id::Standard(0x42), &data);
-    assert_eq!(frame.id(), Id::Standard(0x42));
+    let frame = DataFrame::new(Id::Standard(42), &data);
+    assert_eq!(frame.id(), Id::Standard(42));
     assert_eq!(frame.data(), &data);
 }
 
 #[test]
 #[should_panic]
-fn test_standard_id_exceed() {
-    DataFrame::new(Id::Standard(0x800), &[]);
-}
-
-#[test]
-#[should_panic]
-fn test_standard_data_exceed() {
-    DataFrame::new(Id::Standard(0x42), &[0; 12]);
-}
-
-#[test]
-fn test_extended() {
-    let data = rand::random::<[_; 8]>();
-    let frame = DataFrame::new(Id::Extended(0x4242), &data);
-    assert_eq!(frame.id(), Id::Extended(0x4242));
-    assert_eq!(frame.data(), &data);
-}
-
-#[test]
-#[should_panic]
-fn test_extended_id_exceed() {
-    DataFrame::new(Id::Extended(0x2000_0000), &[]);
-}
-
-#[test]
-#[should_panic]
-fn test_extended_data_exceed() {
-    DataFrame::new(Id::Extended(0x4242), &[0; 12]);
+fn test_data_exceed() {
+    DataFrame::new(Id::Standard(42), &[0; 12]);
 }

@@ -3,7 +3,7 @@ use crate::sys;
 use std::mem::MaybeUninit;
 
 #[test]
-fn test_standard() {
+fn test_data_standard() {
     let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
     let inner = unsafe {
         (*inner.as_mut_ptr()).can_id = 0x42;
@@ -16,7 +16,7 @@ fn test_standard() {
 }
 
 #[test]
-fn test_extended() {
+fn test_data_extended() {
     let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
     let inner = unsafe {
         (*inner.as_mut_ptr()).can_id = 0x4242 | sys::CAN_EFF_FLAG;
@@ -29,7 +29,7 @@ fn test_extended() {
 }
 
 #[test]
-fn test_fd_standard() {
+fn test_fd_data_standard() {
     let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
     let inner = unsafe {
         (*inner.as_mut_ptr()).can_id = 0x42;
@@ -42,7 +42,7 @@ fn test_fd_standard() {
 }
 
 #[test]
-fn test_fd_extended() {
+fn test_fd_data_extended() {
     let mut inner = MaybeUninit::<sys::canfd_frame>::zeroed();
     let inner = unsafe {
         (*inner.as_mut_ptr()).can_id = 0x4242 | sys::CAN_EFF_FLAG;

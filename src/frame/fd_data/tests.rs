@@ -23,12 +23,12 @@ impl Distribution<FdDataFrame> for Standard {
 }
 
 #[test]
-fn test_fd_standard() {
+fn test_fd_data() {
     for &brs in &[false, true] {
         for &esi in &[false, true] {
             let data = rand::random::<[_; 8]>();
-            let frame = FdDataFrame::new(Id::Standard(0x42), brs, esi, &data);
-            assert_eq!(frame.id(), Id::Standard(0x42));
+            let frame = FdDataFrame::new(Id::Standard(42), brs, esi, &data);
+            assert_eq!(frame.id(), Id::Standard(42));
             assert_eq!(frame.brs(), brs);
             assert_eq!(frame.esi(), esi);
             assert_eq!(frame.data(), &data);
@@ -37,7 +37,7 @@ fn test_fd_standard() {
 }
 
 #[test]
-fn test_fd_standard_data_padded() {
+fn test_fd_data_padded() {
     let data = rand::random::<[_; 17]>();
     let frame = FdDataFrame::new(Id::Standard(0x42), false, false, &data);
     assert_eq!(frame.data().len(), 20);
@@ -46,46 +46,6 @@ fn test_fd_standard_data_padded() {
 
 #[test]
 #[should_panic]
-fn test_fd_standard_id_exceed() {
-    FdDataFrame::new(Id::Standard(0x800), false, false, &[]);
-}
-
-#[test]
-#[should_panic]
-fn test_fd_standard_data_exceed() {
+fn test_fd_data_exceed() {
     FdDataFrame::new(Id::Standard(0x42), false, false, &[0; 72]);
-}
-
-#[test]
-fn test_fd_extended() {
-    for &brs in &[false, true] {
-        for &esi in &[false, true] {
-            let data = rand::random::<[_; 8]>();
-            let frame = FdDataFrame::new(Id::Extended(0x4242), brs, esi, &data);
-            assert_eq!(frame.id(), Id::Extended(0x4242));
-            assert_eq!(frame.brs(), brs);
-            assert_eq!(frame.esi(), esi);
-            assert_eq!(frame.data(), &data);
-        }
-    }
-}
-
-#[test]
-fn test_fd_extended_data_padded() {
-    let data = rand::random::<[_; 17]>();
-    let frame = FdDataFrame::new(Id::Extended(0x4242), false, false, &data);
-    assert_eq!(frame.data().len(), 20);
-    assert_eq!(&frame.data()[..17], &data);
-}
-
-#[test]
-#[should_panic]
-fn test_fd_extended_id_exceed() {
-    FdDataFrame::new(Id::Extended(0x2000_0000), false, false, &[]);
-}
-
-#[test]
-#[should_panic]
-fn test_fd_extended_data_exceed() {
-    FdDataFrame::new(Id::Extended(0x4242), false, false, &[0; 72]);
 }
