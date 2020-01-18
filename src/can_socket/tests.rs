@@ -66,19 +66,10 @@ fn test_bind() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "No such device")]
 fn test_bind_no_device() {
     let ifname = CString::new("NO DEVICE").unwrap();
     CanSocket::bind(ifname).unwrap();
-}
-
-#[test]
-#[should_panic]
-fn test_blocking() {
-    lock!(exclusive);
-    let socket = CanSocket::bind(ifname()).unwrap();
-
-    let _ = recv(socket, None).unwrap();
 }
 
 #[test]
@@ -89,6 +80,15 @@ fn test_nonblocking() {
     socket.set_nonblocking(true).unwrap();
 
     recv(socket, None).unwrap().unwrap();
+}
+
+#[test]
+#[should_panic(expected = "None")]
+fn test_no_nonblocking() {
+    lock!(exclusive);
+    let socket = CanSocket::bind(ifname()).unwrap();
+
+    let _ = recv(socket, None).unwrap();
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn test_recv_own_msgs() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "None")]
 fn test_no_recv_own_msgs() {
     lock!(shared);
     let socket = CanSocket::bind(ifname()).unwrap();
