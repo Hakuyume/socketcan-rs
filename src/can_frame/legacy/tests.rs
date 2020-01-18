@@ -20,3 +20,43 @@ macro_rules! impl_distribution {
 }
 impl_distribution!(CanStandardFrame);
 impl_distribution!(CanExtendedFrame);
+
+#[test]
+fn test_standard() {
+    let data = rand::random::<[_; 8]>();
+    let frame = CanStandardFrame::new(0x42, &data);
+    assert_eq!(frame.id(), 0x42);
+    assert_eq!(frame.data(), &data);
+}
+
+#[test]
+#[should_panic]
+fn test_standard_id_exceed() {
+    CanStandardFrame::new(0x800, &[]);
+}
+
+#[test]
+#[should_panic]
+fn test_standard_data_exceed() {
+    CanStandardFrame::new(0x42, &[0; 12]);
+}
+
+#[test]
+fn test_extended() {
+    let data = rand::random::<[_; 8]>();
+    let frame = CanExtendedFrame::new(0x4242, &data);
+    assert_eq!(frame.id(), 0x4242);
+    assert_eq!(frame.data(), &data);
+}
+
+#[test]
+#[should_panic]
+fn test_extended_id_exceed() {
+    CanExtendedFrame::new(0x20000000, &[]);
+}
+
+#[test]
+#[should_panic]
+fn test_extended_data_exceed() {
+    CanExtendedFrame::new(0x4242, &[0; 12]);
+}

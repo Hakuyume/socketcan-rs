@@ -59,3 +59,6 @@ impl CanFrame {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
