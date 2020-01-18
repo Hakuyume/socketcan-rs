@@ -13,4 +13,5 @@ libc = "0.2"
 bindgen = { version = "0.52", default-features = false, features = ["runtime"] }
 
 [dev-dependencies]
+rand = "0.7"
 structopt = "0.3"

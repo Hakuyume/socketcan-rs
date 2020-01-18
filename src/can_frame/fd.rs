@@ -65,3 +65,6 @@ macro_rules! frame {
 }
 frame!(CanFdStandardFrame, 0, sys::CAN_SFF_ID_BITS);
 frame!(CanFdExtendedFrame, sys::CAN_EFF_FLAG, sys::CAN_EFF_ID_BITS);
+
+#[cfg(test)]
+mod tests;
