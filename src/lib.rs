@@ -9,7 +9,7 @@
 //! let socket = Socket::bind(CString::new("vcan0")?)?;
 //! socket.set_recv_own_msgs(true)?;
 //!
-//! let frame = StandardFrame::new(0x42, &[0, 1, 2, 3, 4, 5, 6, 7]);
+//! let frame = StandardFrame::new(42, &[0, 1, 2, 3, 4, 5, 6, 7]);
 //! socket.send(&Frame::Standard(frame))?;
 //!
 //! let frame = socket.recv()?;
