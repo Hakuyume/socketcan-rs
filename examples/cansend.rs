@@ -20,21 +20,16 @@ fn main() -> io::Result<()> {
 
     let socket = Socket::bind(CString::new(opt.ifname)?)?;
 
+    let id = if opt.id < 1 << 11 {
+        Id::Standard(opt.id)
+    } else {
+        Id::Extended(opt.id)
+    };
     let frame = match opt.brs {
-        None => {
-            if opt.id < 1 << StandardFrame::ID_BITS {
-                Frame::Standard(StandardFrame::new(opt.id, &opt.data))
-            } else {
-                Frame::Extended(ExtendedFrame::new(opt.id, &opt.data))
-            }
-        }
+        None => Frame::Data(DataFrame::new(id, &opt.data)),
         Some(brs) => {
             socket.set_fd_frames(true)?;
-            if opt.id < 1 << FdStandardFrame::ID_BITS {
-                Frame::FdStandard(FdStandardFrame::new(opt.id, brs, false, &opt.data))
-            } else {
-                Frame::FdExtended(FdExtendedFrame::new(opt.id, brs, false, &opt.data))
-            }
+            Frame::FdData(FdDataFrame::new(id, brs, false, &opt.data))
         }
     };
     socket.send(&frame)?;

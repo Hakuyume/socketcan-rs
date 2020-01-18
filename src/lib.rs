@@ -3,14 +3,14 @@
 //! ## Example
 //!
 //! ```no_run
-//! use socketcan::{Frame, Socket, StandardFrame};
+//! use socketcan::{DataFrame, Frame, Id, Socket};
 //! use std::ffi::CString;
 //!
 //! let socket = Socket::bind(CString::new("vcan0")?)?;
 //! socket.set_recv_own_msgs(true)?;
 //!
-//! let frame = StandardFrame::new(42, &[0, 1, 2, 3, 4, 5, 6, 7]);
-//! socket.send(&Frame::Standard(frame))?;
+//! let frame = DataFrame::new(Id::Standard(42), &[0, 1, 2, 3, 4, 5, 6, 7]);
+//! socket.send(&Frame::Data(frame))?;
 //!
 //! let frame = socket.recv()?;
 //! println!("{:?}", frame);

@@ -98,9 +98,11 @@ impl Socket {
             )
         } as usize;
         if size == size_of::<sys::can_frame>() {
-            Ok(unsafe { inner.assume_init().can }.into())
+            Ok(Frame::from_can_frame(unsafe { inner.assume_init().can }))
         } else if size == size_of::<sys::canfd_frame>() {
-            Ok(unsafe { inner.assume_init().canfd }.into())
+            Ok(Frame::from_canfd_frame(unsafe {
+                inner.assume_init().canfd
+            }))
         } else {
             Err(Error::last_os_error())
         }
