@@ -1,7 +1,7 @@
 use super::*;
+use crate::sys;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
-use crate::sys;
 
 impl PartialEq for DataFrame {
     fn eq(&self, other: &Self) -> bool {
