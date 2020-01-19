@@ -15,6 +15,7 @@ impl RemoteFrame {
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();
+            (*inner.as_mut_ptr()).can_dlc = len as _;
             Self(inner.assume_init())
         }
     }
