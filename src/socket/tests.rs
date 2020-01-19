@@ -1,5 +1,6 @@
 use super::Socket;
-use crate::Frame;
+use crate::{sys, DataFrame, FdDataFrame, Frame, Id};
+use rand::Rng;
 use spin::RwLock;
 use std::env;
 use std::ffi::CString;
@@ -60,6 +61,24 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     }
 }
 
+fn random_data_standard() -> Frame {
+    let mut rng = rand::thread_rng();
+    let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
+    let data = (0..rng.gen_range(0, sys::CAN_MAX_DLEN))
+        .map(|_| rng.gen())
+        .collect::<Vec<_>>();
+    Frame::Data(DataFrame::new(id, &data))
+}
+
+fn random_fd_data_standard() -> Frame {
+    let mut rng = rand::thread_rng();
+    let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
+    let data = (0..rng.gen_range(0, sys::CANFD_MAX_DLEN))
+        .map(|_| rng.gen())
+        .collect::<Vec<_>>();
+    Frame::FdData(FdDataFrame::new(id, false, false, &data))
+}
+
 #[cfg(feature = "test_all")]
 #[test]
 fn test_bind() {
@@ -101,7 +120,7 @@ fn test_default_loopback_on() {
     let socket_tx = Socket::bind(ifname()).unwrap();
     let socket_rx = Socket::bind(ifname()).unwrap();
 
-    let frame = Frame::Data(rand::random());
+    let frame = random_data_standard();
     socket_tx.send(&frame).unwrap();
     recv(socket_rx, Some(frame)).unwrap().unwrap();
 }
@@ -112,7 +131,7 @@ fn test_default_recv_own_msgs_off() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
 
-    let frame = Frame::Data(rand::random());
+    let frame = random_data_standard();
     socket.send(&frame).unwrap();
     assert!(recv(socket, Some(frame)).is_none());
 }
@@ -124,7 +143,7 @@ fn test_set_recv_own_msgs_on() {
     let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
-    let frame = Frame::Data(rand::random());
+    let frame = random_data_standard();
     socket.send(&frame).unwrap();
     recv(socket, Some(frame)).unwrap().unwrap();
 }
@@ -135,7 +154,7 @@ fn test_default_fd_frames_off() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
 
-    let frame = Frame::FdData(rand::random());
+    let frame = random_fd_data_standard();
     assert_eq!(
         socket.send(&frame).unwrap_err().kind(),
         ErrorKind::InvalidInput
@@ -151,7 +170,7 @@ fn test_set_fd_frames_on() {
     socket_tx.set_fd_frames(true).unwrap();
     socket_rx.set_fd_frames(true).unwrap();
 
-    let frame = Frame::FdData(rand::random());
+    let frame = random_fd_data_standard();
     socket_tx.send(&frame).unwrap();
     recv(socket_rx, Some(frame)).unwrap().unwrap();
 }
