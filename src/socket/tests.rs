@@ -3,7 +3,7 @@ use crate::Frame;
 use spin::RwLock;
 use std::env;
 use std::ffi::CString;
-use std::io::Result;
+use std::io::{ErrorKind, Result};
 use std::os::unix::ffi::OsStrExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -56,6 +56,7 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
             }
         })
     };
+
     thread::sleep(Duration::from_millis(100));
     if is_done.load(Ordering::Relaxed) {
         handle.join().ok()
@@ -71,36 +72,59 @@ fn test_bind() {
 }
 
 #[test]
-#[should_panic(expected = "No such device")]
 fn test_bind_no_device() {
     let ifname = CString::new("NO DEVICE").unwrap();
-    Socket::bind(ifname).unwrap();
+    assert!(Socket::bind(ifname).is_err());
 }
 
 #[cfg(feature = "test_all")]
 #[test]
-#[should_panic(expected = "WouldBlock")]
-fn test_nonblocking() {
+fn test_default_nonblocking_off() {
+    lock!(exclusive);
+    let socket = Socket::bind(ifname()).unwrap();
+
+    assert!(recv(socket, None).is_none());
+}
+
+#[cfg(feature = "test_all")]
+#[test]
+fn test_set_nonblocking_on() {
     lock!(exclusive);
     let socket = Socket::bind(ifname()).unwrap();
     socket.set_nonblocking(true).unwrap();
 
-    recv(socket, None).unwrap().unwrap();
+    assert_eq!(
+        recv(socket, None).unwrap().unwrap_err().kind(),
+        ErrorKind::WouldBlock
+    );
 }
 
 #[cfg(feature = "test_all")]
 #[test]
-#[should_panic(expected = "None")]
-fn test_no_nonblocking() {
-    lock!(exclusive);
+fn test_default_loopback_on() {
+    lock!(shared);
+    let socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_rx = Socket::bind(ifname()).unwrap();
+
+    let frame = Frame::Data(rand::random());
+    socket_tx.send(&frame).unwrap();
+    recv(socket_rx, Some(frame)).unwrap().unwrap();
+}
+
+#[cfg(feature = "test_all")]
+#[test]
+fn test_default_recv_own_msgs_off() {
+    lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
 
-    let _ = recv(socket, None).unwrap();
+    let frame = Frame::Data(rand::random());
+    socket.send(&frame).unwrap();
+    assert!(recv(socket, Some(frame)).is_none());
 }
 
 #[cfg(feature = "test_all")]
 #[test]
-fn test_recv_own_msgs() {
+fn test_set_recv_own_msgs_on() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
@@ -112,37 +136,27 @@ fn test_recv_own_msgs() {
 
 #[cfg(feature = "test_all")]
 #[test]
-#[should_panic(expected = "None")]
-fn test_no_recv_own_msgs() {
+fn test_default_fd_frames_off() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
 
-    let frame = Frame::Data(rand::random());
-    socket.send(&frame).unwrap();
-    let _ = recv(socket, Some(frame)).unwrap();
+    let frame = Frame::FdData(rand::random());
+    assert_eq!(
+        socket.send(&frame).unwrap_err().kind(),
+        ErrorKind::InvalidInput
+    );
 }
 
 #[cfg(feature = "test_all")]
 #[test]
-fn test_fd_frames() {
+fn test_set_fd_frames_on() {
     lock!(shared);
-    let socket = Socket::bind(ifname()).unwrap();
-    socket.set_recv_own_msgs(true).unwrap();
-    socket.set_fd_frames(true).unwrap();
+    let socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_rx = Socket::bind(ifname()).unwrap();
+    socket_tx.set_fd_frames(true).unwrap();
+    socket_rx.set_fd_frames(true).unwrap();
 
     let frame = Frame::FdData(rand::random());
-    socket.send(&frame).unwrap();
-    recv(socket, Some(frame)).unwrap().unwrap();
-}
-
-#[cfg(feature = "test_all")]
-#[test]
-#[should_panic(expected = "InvalidInput")]
-fn test_no_fd_frames() {
-    lock!(shared);
-    let socket = Socket::bind(ifname()).unwrap();
-    socket.set_recv_own_msgs(true).unwrap();
-
-    let frame = Frame::FdData(rand::random());
-    socket.send(&frame).unwrap();
+    socket_tx.send(&frame).unwrap();
+    recv(socket_rx, Some(frame)).unwrap().unwrap();
 }
