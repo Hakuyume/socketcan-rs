@@ -45,13 +45,8 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
             let _cxt = Context(is_done);
             loop {
                 let f = socket.recv()?;
-                match &frame {
-                    Some(frame) => {
-                        if &f == frame {
-                            break Ok(f);
-                        }
-                    }
-                    None => break Ok(f),
+                if frame.as_ref().map(|frame| &f == frame).unwrap_or(true) {
+                    break Ok(f);
                 }
             }
         })
