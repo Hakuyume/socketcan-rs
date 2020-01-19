@@ -1,24 +1,9 @@
 use super::FdDataFrame;
-use crate::{sys, Id};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
+use crate::Id;
 
 impl PartialEq for FdDataFrame {
     fn eq(&self, other: &Self) -> bool {
         self.id() == other.id() && self.data() == other.data()
-    }
-}
-
-impl Distribution<FdDataFrame> for Standard {
-    fn sample<R>(&self, rng: &mut R) -> FdDataFrame
-    where
-        R: Rng + ?Sized,
-    {
-        let id = rng.gen();
-        let data = (0..rng.gen_range(0, sys::CANFD_MAX_DLEN))
-            .map(|_| rng.gen())
-            .collect::<Vec<_>>();
-        FdDataFrame::new(id, false, false, &data)
     }
 }
 
