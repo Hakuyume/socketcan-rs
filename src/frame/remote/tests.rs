@@ -1,4 +1,5 @@
-use super::*;
+use super::RemoteFrame;
+use crate::Id;
 
 impl PartialEq for RemoteFrame {
     fn eq(&self, other: &Self) -> bool {
