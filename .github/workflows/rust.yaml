@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: cargo build --verbose --all-targets
+    - run: cargo build --verbose --all-targets --all-features
     - run: cargo test --verbose
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - run: cargo fmt --verbose -- --check
-    - run: cargo clippy --all-targets
+    - run: cargo clippy --all-targets --all-features
   doc:
     if: github.ref == 'refs/heads/master'
     needs: [test, lint]
