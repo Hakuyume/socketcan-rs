@@ -11,7 +11,7 @@ impl RemoteFrame {
     ///
     /// Panics if `id` exceeds its limit or `dlc` is greater than 8.
     pub fn new(id: Id, dlc: u8) -> Self {
-        assert!(dlc <= sys::CAN_MAX_DLEN as _ );
+        assert!(dlc <= sys::CAN_MAX_DLEN as _);
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();
