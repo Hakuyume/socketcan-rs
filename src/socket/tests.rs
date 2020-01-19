@@ -4,7 +4,9 @@ use rand::Rng;
 use spin::RwLock;
 use std::env;
 use std::ffi::CString;
-use std::io::{ErrorKind, Result};
+#[allow(unused_imports)]
+use std::io::ErrorKind;
+use std::io::Result;
 use std::os::unix::ffi::OsStrExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -20,7 +22,7 @@ fn ifname() -> CString {
     CString::new(ifname.as_bytes()).unwrap()
 }
 
-#[cfg(feature = "test_all")]
+#[allow(unused_macros)]
 macro_rules! lock {
     (shared) => {
         let _lock = LOCK.read();
@@ -61,6 +63,7 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     }
 }
 
+#[allow(dead_code)]
 fn random_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
@@ -70,6 +73,7 @@ fn random_data_standard() -> Frame {
     Frame::Data(DataFrame::new(id, &data))
 }
 
+#[allow(dead_code)]
 fn random_fd_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
