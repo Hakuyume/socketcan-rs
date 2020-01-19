@@ -1,5 +1,5 @@
-use super::*;
-use crate::sys;
+use super::DataFrame;
+use crate::{sys, Id};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 

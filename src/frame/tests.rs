@@ -1,5 +1,5 @@
-use super::*;
-use crate::sys;
+use super::Frame;
+use crate::{sys, Id};
 use std::mem::MaybeUninit;
 
 #[test]
