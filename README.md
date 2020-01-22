@@ -1,6 +1,6 @@
 # socketcan-rs
 
-![](https://github.com/Hakuyume/socketcan-rs/workflows/Rust/badge.svg)
+[![](https://github.com/Hakuyume/socketcan-rs/workflows/Rust/badge.svg)](https://github.com/Hakuyume/socketcan-rs/actions?query=branch%3Amaster)
 
 Rust binding for [SocketCAN](https://www.kernel.org/doc/Documentation/networking/can.txt)
 
