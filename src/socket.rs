@@ -42,45 +42,32 @@ impl Socket {
     }
 
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
-        let opt = nonblocking as c_int;
-        if unsafe { libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &opt) } != 0 {
+        if unsafe { libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &(nonblocking as c_int)) } != 0 {
+            return Err(Error::last_os_error());
+        }
+        Ok(())
+    }
+
+    unsafe fn setsockopt<T>(&self, name: c_int, value: &T) -> Result<()> {
+        if libc::setsockopt(
+            self.as_raw_fd(),
+            sys::SOL_CAN_RAW as _,
+            name,
+            value as *const _ as _,
+            size_of_val(value) as _,
+        ) != 0
+        {
             return Err(Error::last_os_error());
         }
         Ok(())
     }
 
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
-        let opt = enable as c_int;
-        if unsafe {
-            libc::setsockopt(
-                self.as_raw_fd(),
-                sys::SOL_CAN_RAW as _,
-                sys::CAN_RAW_RECV_OWN_MSGS as _,
-                &opt as *const _ as _,
-                size_of_val(&opt) as _,
-            )
-        } != 0
-        {
-            return Err(Error::last_os_error());
-        }
-        Ok(())
+        unsafe { self.setsockopt(sys::CAN_RAW_RECV_OWN_MSGS as _, &(enable as c_int)) }
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
-        let opt = enable as c_int;
-        if unsafe {
-            libc::setsockopt(
-                self.as_raw_fd(),
-                sys::SOL_CAN_RAW as _,
-                sys::CAN_RAW_FD_FRAMES as _,
-                &opt as *const _ as _,
-                size_of_val(&opt) as _,
-            )
-        } != 0
-        {
-            return Err(Error::last_os_error());
-        }
-        Ok(())
+        unsafe { self.setsockopt(sys::CAN_RAW_FD_FRAMES as _, &(enable as c_int)) }
     }
 
     pub fn recv(&self) -> Result<Frame> {
