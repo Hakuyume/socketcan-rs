@@ -1,8 +1,13 @@
 [package]
-name = "socketcan"
+name = "socketcan-alt"
 version = "0.1.0"
 authors = ["Toru Ogawa <Hakuyume@users.noreply.github.com>"]
 edition = "2018"
+description = "Rust binding for SocketCAN"
+license = "BSD-3-Clause"
+documentation = "https://docs.rs/crate/socketcan-alt/"
+repository = "https://github.com/Hakuyume/socketcan-rs"
+exclude = [".github"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

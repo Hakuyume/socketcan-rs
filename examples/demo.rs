@@ -1,4 +1,4 @@
-use socketcan::*;
+use socketcan_alt::*;
 use std::ffi::CString;
 use std::io::Result;
 use std::sync::Arc;

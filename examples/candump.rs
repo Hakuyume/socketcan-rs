@@ -1,4 +1,4 @@
-use socketcan::Socket;
+use socketcan_alt::Socket;
 use std::ffi::CString;
 use std::io::Result;
 use structopt::StructOpt;
