@@ -3,7 +3,7 @@
 //! ## Example
 //!
 //! ```no_run
-//! use socketcan::{DataFrame, Frame, Id, Socket};
+//! use socketcan_alt::{DataFrame, Frame, Id, Socket};
 //! use std::ffi::CString;
 //!
 //! let socket = Socket::bind(CString::new("vcan0")?)?;
