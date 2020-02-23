@@ -48,10 +48,10 @@ impl Socket {
         Ok(())
     }
 
-    unsafe fn setsockopt<T>(&self, name: c_int, value: &T) -> Result<()> {
+    unsafe fn setsockopt<T>(&self, level: c_int, name: c_int, value: &T) -> Result<()> {
         if libc::setsockopt(
             self.as_raw_fd(),
-            sys::SOL_CAN_RAW as _,
+            level,
             name,
             value as *const _ as _,
             size_of_val(value) as _,
@@ -62,12 +62,28 @@ impl Socket {
         Ok(())
     }
 
+    pub fn set_timestamping(&self, flags: c_int) -> Result<()> {
+        unsafe { self.setsockopt(libc::SOL_SOCKET, sys::SO_TIMESTAMPING as _, &flags) }
+    }
+
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
-        unsafe { self.setsockopt(sys::CAN_RAW_RECV_OWN_MSGS as _, &(enable as c_int)) }
+        unsafe {
+            self.setsockopt(
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_RECV_OWN_MSGS as _,
+                &(enable as c_int),
+            )
+        }
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
-        unsafe { self.setsockopt(sys::CAN_RAW_FD_FRAMES as _, &(enable as c_int)) }
+        unsafe {
+            self.setsockopt(
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_FD_FRAMES as _,
+                &(enable as c_int),
+            )
+        }
     }
 
     pub fn recv(&self) -> Result<Frame> {
