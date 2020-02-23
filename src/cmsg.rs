@@ -15,18 +15,18 @@ impl<'a> From<&'a libc::cmsghdr> for Cmsg<'a> {
     fn from(value: &'a libc::cmsghdr) -> Self {
         match (value.cmsg_level, value.cmsg_type) {
             (libc::SOL_SOCKET, libc::SO_TIMESTAMPING) => {
-                let mut timestamping = MaybeUninit::<[libc::timespec; 3]>::uninit();
-                let timestamping = unsafe {
+                let mut ts = MaybeUninit::<[libc::timespec; 3]>::uninit();
+                let ts = unsafe {
                     ptr::copy_nonoverlapping(
                         libc::CMSG_DATA(value),
-                        timestamping.as_mut_ptr() as _,
+                        ts.as_mut_ptr() as _,
                         size_of::<[libc::timespec; 3]>(),
                     );
-                    timestamping.assume_init()
+                    ts.assume_init()
                 };
                 Self::Timestamping {
-                    software: timestamping[0],
-                    hardware: timestamping[2],
+                    software: ts[0],
+                    hardware: ts[2],
                 }
             }
             _ => Self::Other(value),
