@@ -1,4 +1,4 @@
-use crate::{sys, Frame};
+use crate::{sys, Frame, Timestamping};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
@@ -62,8 +62,14 @@ impl Socket {
         Ok(())
     }
 
-    pub fn set_timestamping(&self, flags: c_int) -> Result<()> {
-        unsafe { self.setsockopt(libc::SOL_SOCKET, sys::SO_TIMESTAMPING as _, &flags) }
+    pub fn set_timestamping(&self, timestamping: Timestamping) -> Result<()> {
+        unsafe {
+            self.setsockopt(
+                libc::SOL_SOCKET,
+                sys::SO_TIMESTAMPING as _,
+                &timestamping.bits(),
+            )
+        }
     }
 
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
