@@ -66,8 +66,8 @@ impl Socket {
         unsafe {
             self.setsockopt(
                 libc::SOL_SOCKET,
-                sys::SO_TIMESTAMPING as _,
-                &timestamping.bits(),
+                libc::SO_TIMESTAMPING,
+                &(timestamping.bits() as c_int),
             )
         }
     }
