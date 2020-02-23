@@ -1,4 +1,4 @@
-use crate::{sys, Frame};
+use crate::{frame, sys, Frame};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
@@ -71,28 +71,16 @@ impl Socket {
     }
 
     pub fn recv(&self) -> Result<Frame> {
-        #[repr(C)]
-        union Inner {
-            can: sys::can_frame,
-            canfd: sys::canfd_frame,
-        }
-        let mut inner = MaybeUninit::<Inner>::uninit();
-        let size = unsafe {
-            libc::read(
+        let mut inner = MaybeUninit::<frame::Inner>::uninit();
+        unsafe {
+            let size = libc::read(
                 self.as_raw_fd(),
                 inner.as_mut_ptr() as _,
-                size_of::<Inner>(),
-            )
-        } as usize;
-        if size == size_of::<sys::can_frame>() {
-            Ok(Frame::from_can_frame(unsafe { inner.assume_init().can }))
-        } else if size == size_of::<sys::canfd_frame>() {
-            Ok(Frame::from_canfd_frame(unsafe {
-                inner.assume_init().canfd
-            }))
-        } else {
-            Err(Error::last_os_error())
+                size_of::<frame::Inner>(),
+            );
+            Frame::from_inner(inner, size as _)
         }
+        .ok_or_else(Error::last_os_error)
     }
 
     pub fn send(&self, frame: &Frame) -> Result<()> {
