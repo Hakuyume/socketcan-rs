@@ -72,14 +72,15 @@ impl Socket {
 
     pub fn recv(&self) -> Result<Frame> {
         let mut inner = MaybeUninit::<frame::Inner>::uninit();
-        let size = unsafe {
-            libc::read(
+        unsafe {
+            let size = libc::read(
                 self.as_raw_fd(),
                 inner.as_mut_ptr() as _,
                 size_of::<frame::Inner>(),
-            )
-        };
-        unsafe { Frame::from_inner(inner, size as _) }.ok_or_else(Error::last_os_error)
+            );
+            Frame::from_inner(inner, size as _)
+        }
+        .ok_or_else(Error::last_os_error)
     }
 
     pub fn send(&self, frame: &Frame) -> Result<()> {
