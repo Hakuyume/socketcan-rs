@@ -10,7 +10,7 @@ pub use error::ErrorFrame;
 pub use fd_data::FdDataFrame;
 pub use id::Id;
 pub use remote::RemoteFrame;
-use std::mem::size_of_val;
+use std::mem::{size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_void;
 
 #[derive(Clone, Copy, Debug)]
@@ -22,20 +22,30 @@ pub enum Frame {
     Error(ErrorFrame),
 }
 
-impl Frame {
-    pub(crate) fn from_can_frame(inner: sys::can_frame) -> Self {
-        if inner.can_id & sys::CAN_RTR_FLAG != 0 {
-            Self::Remote(RemoteFrame(inner))
-        } else if inner.can_id & sys::CAN_ERR_FLAG != 0 {
-            Self::Error(ErrorFrame(inner))
-        } else {
-            Self::Data(DataFrame(inner))
-        }
-    }
+#[repr(C)]
+pub(crate) union Inner {
+    can: sys::can_frame,
+    canfd: sys::canfd_frame,
+}
 
-    pub(crate) fn from_canfd_frame(inner: sys::canfd_frame) -> Self {
-        assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
-        Self::FdData(FdDataFrame(inner))
+impl Frame {
+    pub(crate) unsafe fn from_inner(inner: MaybeUninit<Inner>, size: usize) -> Option<Self> {
+        if size == size_of::<sys::can_frame>() {
+            let inner = inner.assume_init().can;
+            if inner.can_id & sys::CAN_RTR_FLAG != 0 {
+                Some(Self::Remote(RemoteFrame(inner)))
+            } else if inner.can_id & sys::CAN_ERR_FLAG != 0 {
+                Some(Self::Error(ErrorFrame(inner)))
+            } else {
+                Some(Self::Data(DataFrame(inner)))
+            }
+        } else if size == size_of::<sys::canfd_frame>() {
+            let inner = inner.assume_init().canfd;
+            assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
+            Some(Self::FdData(FdDataFrame(inner)))
+        } else {
+            None
+        }
     }
 
     pub(crate) fn as_ptr(&self) -> *const c_void {
