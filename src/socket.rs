@@ -1,4 +1,4 @@
-use crate::{frame, sys, Cmsg, Frame, Timestamping};
+use crate::{sys, Cmsg, Frame, Timestamping};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
@@ -94,14 +94,14 @@ impl Socket {
     }
 
     pub fn recv(&self) -> Result<Frame> {
-        let mut frame = MaybeUninit::<frame::Inner>::uninit();
+        let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
         unsafe {
             let size = libc::read(
                 self.as_raw_fd(),
                 frame.as_mut_ptr() as _,
-                size_of::<frame::Inner>(),
+                size_of::<sys::canfd_frame>(),
             );
-            Frame::from_inner(frame, size as _)
+            Frame::from_raw(frame, size as _)
         }
         .ok_or_else(Error::last_os_error)
     }
@@ -110,12 +110,12 @@ impl Socket {
         &self,
         cmsg_buf: &'a mut [u8],
     ) -> Result<(Frame, Option<impl 'a + Iterator<Item = Cmsg<'a>>>)> {
-        let mut frame = MaybeUninit::<frame::Inner>::uninit();
+        let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
         let mut iov = MaybeUninit::<libc::iovec>::uninit();
         let mut msg = MaybeUninit::<libc::msghdr>::uninit();
         unsafe {
             (*iov.as_mut_ptr()).iov_base = frame.as_mut_ptr() as _;
-            (*iov.as_mut_ptr()).iov_len = size_of::<frame::Inner>();
+            (*iov.as_mut_ptr()).iov_len = size_of::<sys::canfd_frame>();
 
             (*msg.as_mut_ptr()).msg_name = ptr::null_mut();
             (*msg.as_mut_ptr()).msg_iov = iov.as_mut_ptr();
@@ -126,7 +126,7 @@ impl Socket {
             let size = libc::recvmsg(self.as_raw_fd(), msg.as_mut_ptr(), 0);
             // frame will be moved
             (*iov.as_mut_ptr()).iov_base = ptr::null_mut();
-            let frame = Frame::from_inner(frame, size as _).ok_or_else(Error::last_os_error)?;
+            let frame = Frame::from_raw(frame, size as _).ok_or_else(Error::last_os_error)?;
             let msg = msg.assume_init();
 
             let cmsgs = if msg.msg_flags & libc::MSG_CTRUNC == 0 {
