@@ -4,7 +4,6 @@ use rand::Rng;
 use spin::RwLock;
 use std::env;
 use std::ffi::CString;
-#[allow(unused_imports)]
 use std::io::ErrorKind;
 use std::io::Result;
 use std::os::unix::ffi::OsStrExt;
@@ -13,16 +12,13 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-#[allow(dead_code)]
 static LOCK: RwLock<()> = RwLock::new(());
 
-#[allow(dead_code)]
 fn ifname() -> CString {
     let ifname = env::var_os("IFNAME").expect("IFNAME environment variable is not set");
     CString::new(ifname.as_bytes()).unwrap()
 }
 
-#[allow(unused_macros)]
 macro_rules! lock {
     (shared) => {
         let _lock = LOCK.read();
@@ -32,7 +28,6 @@ macro_rules! lock {
     };
 }
 
-#[allow(dead_code)]
 fn timeout<F, T>(f: F) -> Option<T>
 where
     F: 'static + Send + FnOnce() -> T,
@@ -60,7 +55,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 fn recv(socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
     timeout(move || loop {
         let frame = socket.recv()?;
@@ -70,7 +64,6 @@ fn recv(socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
     })
 }
 
-#[allow(dead_code)]
 fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::timespec>>> {
     timeout(move || {
         let mut cmsg_buf = vec![0; Cmsg::space()];
@@ -87,7 +80,6 @@ fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::
     })
 }
 
-#[allow(dead_code)]
 fn random_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
@@ -97,7 +89,6 @@ fn random_data_standard() -> Frame {
     Frame::Data(DataFrame::new(id, &data))
 }
 
-#[allow(dead_code)]
 fn random_fd_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
@@ -107,8 +98,8 @@ fn random_fd_data_standard() -> Frame {
     Frame::FdData(FdDataFrame::new(id, false, false, &data))
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_bind() {
     Socket::bind(ifname()).unwrap();
 }
@@ -119,8 +110,8 @@ fn test_bind_no_device() {
     assert!(Socket::bind(ifname).is_err());
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_default_nonblocking_off() {
     lock!(exclusive);
     let socket = Socket::bind(ifname()).unwrap();
@@ -128,8 +119,8 @@ fn test_default_nonblocking_off() {
     assert!(recv(socket, None).is_none());
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_set_nonblocking_on() {
     lock!(exclusive);
     let socket = Socket::bind(ifname()).unwrap();
@@ -141,8 +132,8 @@ fn test_set_nonblocking_on() {
     );
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_default_timestamping_off() {
     lock!(shared);
     let socket_tx = Socket::bind(ifname()).unwrap();
@@ -153,8 +144,8 @@ fn test_default_timestamping_off() {
     assert!(recv_msg(socket_rx, Some(frame)).unwrap().unwrap().is_none());
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_set_timestamping_on() {
     lock!(shared);
     let socket_tx = Socket::bind(ifname()).unwrap();
@@ -178,8 +169,8 @@ fn test_set_timestamping_on() {
     );
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_default_loopback_on() {
     lock!(shared);
     let socket_tx = Socket::bind(ifname()).unwrap();
@@ -190,8 +181,8 @@ fn test_default_loopback_on() {
     recv(socket_rx, Some(frame)).unwrap().unwrap();
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_default_recv_own_msgs_off() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
@@ -201,8 +192,8 @@ fn test_default_recv_own_msgs_off() {
     assert!(recv(socket, Some(frame)).is_none());
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_set_recv_own_msgs_on() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
@@ -213,8 +204,8 @@ fn test_set_recv_own_msgs_on() {
     recv(socket, Some(frame)).unwrap().unwrap();
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_default_fd_frames_off() {
     lock!(shared);
     let socket = Socket::bind(ifname()).unwrap();
@@ -226,8 +217,8 @@ fn test_default_fd_frames_off() {
     );
 }
 
-#[cfg(feature = "test_all")]
 #[test]
+#[ignore]
 fn test_set_fd_frames_on() {
     lock!(shared);
     let socket_tx = Socket::bind(ifname()).unwrap();
