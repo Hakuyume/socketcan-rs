@@ -29,7 +29,7 @@ fn main() -> Result<()> {
                 frame
             );
         } else {
-            println!("N/A {:?}", frame);
+            println!("{:?}", frame);
         }
     }
 }
