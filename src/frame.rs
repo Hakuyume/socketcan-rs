@@ -13,12 +13,14 @@ pub use remote::RemoteFrame;
 use std::mem::{size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_void;
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Frame {
     Data(DataFrame),
     FdData(FdDataFrame),
     Remote(RemoteFrame),
+    #[doc(hidden)]
     Error(ErrorFrame),
 }
 
