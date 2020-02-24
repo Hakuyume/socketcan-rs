@@ -12,10 +12,10 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     let socket = Socket::bind(CString::new(opt.ifname)?)?;
-    socket.set_timestamping(Timestamping::SOFTWARE)?;
+    socket.set_timestamping(Timestamping::RX_SOFTWARE | Timestamping::SOFTWARE)?;
     socket.set_fd_frames(true)?;
 
-    let mut cmsg_buf = [0; 64];
+    let mut cmsg_buf = vec![0; Cmsg::space()];
     loop {
         let (frame, cmsgs) = socket.recv_msg(&mut cmsg_buf)?;
         let timestamp = cmsgs.into_iter().flatten().find_map(|cmsg| match cmsg {

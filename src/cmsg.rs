@@ -8,6 +8,14 @@ pub enum Cmsg<'a> {
 }
 
 impl<'a> Cmsg<'a> {
+    pub fn space() -> usize {
+        [size_of::<[libc::timespec; 3]>()]
+            .iter()
+            .map(|&size| unsafe { libc::CMSG_SPACE(size as _) })
+            .max()
+            .unwrap_or_default() as _
+    }
+
     pub(crate) unsafe fn from_raw(cmsg: &'a libc::cmsghdr) -> Self {
         match (cmsg.cmsg_level, cmsg.cmsg_type) {
             (libc::SOL_SOCKET, libc::SCM_TIMESTAMPING) => Self::Timestamping(cmsg_data(cmsg)),
