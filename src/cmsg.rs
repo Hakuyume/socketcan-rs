@@ -10,7 +10,7 @@ pub enum Cmsg<'a> {
 impl<'a> Cmsg<'a> {
     pub(crate) unsafe fn from_raw(cmsg: &'a libc::cmsghdr) -> Self {
         match (cmsg.cmsg_level, cmsg.cmsg_type) {
-            (libc::SOL_SOCKET, libc::SO_TIMESTAMPING) => Self::Timestamping(cmsg_data(cmsg)),
+            (libc::SOL_SOCKET, libc::SCM_TIMESTAMPING) => Self::Timestamping(cmsg_data(cmsg)),
             _ => Self::Other(cmsg),
         }
     }
