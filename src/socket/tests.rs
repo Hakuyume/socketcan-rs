@@ -1,5 +1,5 @@
 use super::Socket;
-use crate::{sys, DataFrame, FdDataFrame, Frame, Id};
+use crate::{sys, Cmsg, DataFrame, FdDataFrame, Frame, Id, Timestamping};
 use rand::Rng;
 use spin::RwLock;
 use std::env;
@@ -33,7 +33,11 @@ macro_rules! lock {
 }
 
 #[allow(dead_code)]
-fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
+fn timeout<F, T>(f: F) -> Option<T>
+where
+    F: 'static + Send + FnOnce() -> T,
+    T: 'static + Send,
+{
     struct Context(Arc<AtomicBool>);
     impl Drop for Context {
         fn drop(&mut self) {
@@ -42,18 +46,11 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     }
 
     let is_done = Arc::new(AtomicBool::new(false));
-    let handle = {
-        let is_done = is_done.clone();
-        thread::spawn(move || {
-            let _cxt = Context(is_done);
-            loop {
-                let f = socket.recv()?;
-                if frame.as_ref().map(|frame| &f == frame).unwrap_or(true) {
-                    break Ok(f);
-                }
-            }
-        })
-    };
+    let cxt = Context(is_done.clone());
+    let handle = thread::spawn(move || {
+        let _cxt = cxt;
+        f()
+    });
 
     thread::sleep(Duration::from_millis(100));
     if is_done.load(Ordering::Relaxed) {
@@ -61,6 +58,33 @@ fn recv(socket: Socket, frame: Option<Frame>) -> Option<Result<Frame>> {
     } else {
         None
     }
+}
+
+#[allow(dead_code)]
+fn recv(socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
+    timeout(move || loop {
+        let frame = socket.recv()?;
+        if query.as_ref().map(|query| &frame == query).unwrap_or(true) {
+            return Ok(());
+        }
+    })
+}
+
+#[allow(dead_code)]
+fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::timespec>>> {
+    timeout(move || {
+        let mut cmsg_buf = vec![0; Cmsg::space()];
+        loop {
+            let (frame, cmsgs) = socket.recv_msg(&mut cmsg_buf)?;
+            if query.as_ref().map(|query| &frame == query).unwrap_or(true) {
+                let timestamp = cmsgs.into_iter().flatten().find_map(|cmsg| match cmsg {
+                    Cmsg::Timestamping(ts) => Some(ts[0]),
+                    _ => None,
+                });
+                return Ok(timestamp);
+            }
+        }
+    })
 }
 
 #[allow(dead_code)]
@@ -114,6 +138,43 @@ fn test_set_nonblocking_on() {
     assert_eq!(
         recv(socket, None).unwrap().unwrap_err().kind(),
         ErrorKind::WouldBlock
+    );
+}
+
+#[cfg(feature = "test_all")]
+#[test]
+fn test_default_timestamping_off() {
+    lock!(shared);
+    let socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_rx = Socket::bind(ifname()).unwrap();
+
+    let frame = random_data_standard();
+    socket_tx.send(&frame).unwrap();
+    assert!(recv_msg(socket_rx, Some(frame)).unwrap().unwrap().is_none());
+}
+
+#[cfg(feature = "test_all")]
+#[test]
+fn test_set_timestamping_on() {
+    lock!(shared);
+    let socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_rx0 = Socket::bind(ifname()).unwrap();
+    let socket_rx1 = Socket::bind(ifname()).unwrap();
+    socket_rx0
+        .set_timestamping(Timestamping::RX_SOFTWARE | Timestamping::SOFTWARE)
+        .unwrap();
+    socket_rx1
+        .set_timestamping(Timestamping::RX_SOFTWARE | Timestamping::SOFTWARE)
+        .unwrap();
+
+    let frame = random_data_standard();
+    socket_tx.send(&frame).unwrap();
+    let timestamp0 = recv_msg(socket_rx0, Some(frame)).unwrap().unwrap().unwrap();
+    thread::sleep(Duration::from_millis(100));
+    let timestamp1 = recv_msg(socket_rx1, Some(frame)).unwrap().unwrap().unwrap();
+    assert_eq!(
+        (timestamp0.tv_sec, timestamp0.tv_nsec),
+        (timestamp1.tv_sec, timestamp1.tv_nsec)
     );
 }
 
