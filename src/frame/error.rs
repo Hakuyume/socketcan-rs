@@ -1,6 +1,7 @@
 use crate::sys;
 use std::fmt;
 
+#[doc(hidden)]
 #[derive(Clone, Copy)]
 pub struct ErrorFrame(pub(super) sys::can_frame);
 
