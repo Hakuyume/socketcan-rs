@@ -18,14 +18,14 @@ fn main() -> Result<()> {
     let mut cmsg_buf = [0; 64];
     loop {
         let (frame, cmsgs) = socket.recv_msg(&mut cmsg_buf)?;
-        let timestamping = cmsgs.into_iter().flatten().find_map(|cmsg| match cmsg {
-            Cmsg::Timestamping { software, .. } => Some(software),
+        let timestamp = cmsgs.into_iter().flatten().find_map(|cmsg| match cmsg {
+            Cmsg::Timestamping(ts) => Some(ts[0]),
             _ => None,
         });
-        if let Some(timestamping) = timestamping {
+        if let Some(timestamp) = timestamp {
             println!(
                 "{:.9} {:?}",
-                timestamping.tv_sec as f64 + timestamping.tv_nsec as f64 / 1_000_000_000.,
+                timestamp.tv_sec as f64 + timestamp.tv_nsec as f64 / 1_000_000_000.,
                 frame
             );
         } else {
