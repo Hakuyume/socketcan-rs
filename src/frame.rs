@@ -22,16 +22,13 @@ pub enum Frame {
     Error(ErrorFrame),
 }
 
-#[repr(C)]
-pub(crate) union Inner {
-    can: sys::can_frame,
-    canfd: sys::canfd_frame,
-}
-
 impl Frame {
-    pub(crate) unsafe fn from_inner(inner: MaybeUninit<Inner>, size: usize) -> Option<Self> {
+    pub(crate) unsafe fn from_raw(
+        frame: MaybeUninit<sys::canfd_frame>,
+        size: usize,
+    ) -> Option<Self> {
         if size == size_of::<sys::can_frame>() {
-            let inner = inner.assume_init().can;
+            let inner = *(frame.as_ptr() as *const sys::can_frame);
             if inner.can_id & sys::CAN_RTR_FLAG != 0 {
                 Some(Self::Remote(RemoteFrame(inner)))
             } else if inner.can_id & sys::CAN_ERR_FLAG != 0 {
@@ -40,7 +37,7 @@ impl Frame {
                 Some(Self::Data(DataFrame(inner)))
             }
         } else if size == size_of::<sys::canfd_frame>() {
-            let inner = inner.assume_init().canfd;
+            let inner = frame.assume_init();
             assert_eq!(inner.can_id & (sys::CAN_RTR_FLAG | sys::CAN_ERR_FLAG), 0);
             Some(Self::FdData(FdDataFrame(inner)))
         } else {

@@ -18,9 +18,13 @@
 //! # std::io::Result::Ok(())
 //! ```
 
+mod cmsg;
 mod frame;
 mod socket;
 mod sys;
+mod timestamping;
 
+pub use cmsg::Cmsg;
 pub use frame::*;
 pub use socket::Socket;
+pub use timestamping::Timestamping;

@@ -1,9 +1,10 @@
-use crate::{frame, sys, Frame};
+use crate::{sys, Cmsg, Frame, Timestamping};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_int;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::{iter, ptr};
 
 pub struct Socket(RawFd);
 
@@ -48,10 +49,10 @@ impl Socket {
         Ok(())
     }
 
-    unsafe fn setsockopt<T>(&self, name: c_int, value: &T) -> Result<()> {
+    unsafe fn setsockopt<T>(&self, level: c_int, name: c_int, value: &T) -> Result<()> {
         if libc::setsockopt(
             self.as_raw_fd(),
-            sys::SOL_CAN_RAW as _,
+            level,
             name,
             value as *const _ as _,
             size_of_val(value) as _,
@@ -62,25 +63,85 @@ impl Socket {
         Ok(())
     }
 
+    pub fn set_timestamping(&self, timestamping: Timestamping) -> Result<()> {
+        unsafe {
+            self.setsockopt(
+                libc::SOL_SOCKET,
+                libc::SO_TIMESTAMPING,
+                &(timestamping.bits() as c_int),
+            )
+        }
+    }
+
     pub fn set_recv_own_msgs(&self, enable: bool) -> Result<()> {
-        unsafe { self.setsockopt(sys::CAN_RAW_RECV_OWN_MSGS as _, &(enable as c_int)) }
+        unsafe {
+            self.setsockopt(
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_RECV_OWN_MSGS as _,
+                &(enable as c_int),
+            )
+        }
     }
 
     pub fn set_fd_frames(&self, enable: bool) -> Result<()> {
-        unsafe { self.setsockopt(sys::CAN_RAW_FD_FRAMES as _, &(enable as c_int)) }
+        unsafe {
+            self.setsockopt(
+                sys::SOL_CAN_RAW as _,
+                sys::CAN_RAW_FD_FRAMES as _,
+                &(enable as c_int),
+            )
+        }
     }
 
     pub fn recv(&self) -> Result<Frame> {
-        let mut inner = MaybeUninit::<frame::Inner>::uninit();
+        let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
         unsafe {
             let size = libc::read(
                 self.as_raw_fd(),
-                inner.as_mut_ptr() as _,
-                size_of::<frame::Inner>(),
+                frame.as_mut_ptr() as _,
+                size_of::<sys::canfd_frame>(),
             );
-            Frame::from_inner(inner, size as _)
+            Frame::from_raw(frame, size as _)
         }
         .ok_or_else(Error::last_os_error)
+    }
+
+    pub fn recv_msg<'a>(
+        &self,
+        cmsg_buf: &'a mut [u8],
+    ) -> Result<(Frame, Option<impl 'a + Iterator<Item = Cmsg<'a>>>)> {
+        let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
+        let mut iov = MaybeUninit::<libc::iovec>::uninit();
+        let mut msg = MaybeUninit::<libc::msghdr>::uninit();
+        unsafe {
+            (*iov.as_mut_ptr()).iov_base = frame.as_mut_ptr() as _;
+            (*iov.as_mut_ptr()).iov_len = size_of::<sys::canfd_frame>();
+
+            (*msg.as_mut_ptr()).msg_name = ptr::null_mut();
+            (*msg.as_mut_ptr()).msg_iov = iov.as_mut_ptr();
+            (*msg.as_mut_ptr()).msg_iovlen = 1;
+            (*msg.as_mut_ptr()).msg_control = cmsg_buf.as_mut_ptr() as _;
+            (*msg.as_mut_ptr()).msg_controllen = cmsg_buf.len();
+
+            let size = libc::recvmsg(self.as_raw_fd(), msg.as_mut_ptr(), 0);
+            // frame will be moved
+            (*iov.as_mut_ptr()).iov_base = ptr::null_mut();
+            let frame = Frame::from_raw(frame, size as _).ok_or_else(Error::last_os_error)?;
+            let msg = msg.assume_init();
+
+            let cmsgs = if msg.msg_flags & libc::MSG_CTRUNC == 0 {
+                Some(
+                    iter::successors(libc::CMSG_FIRSTHDR(&msg).as_ref(), move |&cmsg| {
+                        libc::CMSG_NXTHDR(&msg, cmsg).as_ref()
+                    })
+                    .map(|cmsg| Cmsg::from_raw(cmsg)),
+                )
+            } else {
+                None
+            };
+
+            Ok((frame, cmsgs))
+        }
     }
 
     pub fn send(&self, frame: &Frame) -> Result<()> {
