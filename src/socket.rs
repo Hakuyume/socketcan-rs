@@ -124,6 +124,8 @@ impl Socket {
             (*msg.as_mut_ptr()).msg_controllen = cmsg_buf.len();
 
             let size = libc::recvmsg(self.as_raw_fd(), msg.as_mut_ptr(), 0);
+            // frame will be moved
+            (*iov.as_mut_ptr()).iov_base = ptr::null_mut();
             let frame = Frame::from_inner(frame, size as _).ok_or_else(Error::last_os_error)?;
             let msg = msg.assume_init();
 
@@ -132,7 +134,7 @@ impl Socket {
                     iter::successors(libc::CMSG_FIRSTHDR(&msg).as_ref(), move |&cmsg| {
                         libc::CMSG_NXTHDR(&msg, cmsg).as_ref()
                     })
-                    .map(Cmsg::from),
+                    .map(|cmsg| Cmsg::from_raw(cmsg)),
                 )
             } else {
                 None
