@@ -163,6 +163,8 @@ fn test_set_timestamping_on() {
     let timestamp0 = recv_msg(socket_rx0, Some(frame)).unwrap().unwrap().unwrap();
     thread::sleep(Duration::from_millis(100));
     let timestamp1 = recv_msg(socket_rx1, Some(frame)).unwrap().unwrap().unwrap();
+    assert!(timestamp0.tv_sec != 0);
+    assert!(timestamp1.tv_sec != 0);
     assert_eq!(
         (timestamp0.tv_sec, timestamp0.tv_nsec),
         (timestamp1.tv_sec, timestamp1.tv_nsec)
