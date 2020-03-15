@@ -24,7 +24,7 @@ mod socket;
 mod sys;
 mod timestamping;
 
-pub use cmsg::Cmsg;
+pub use cmsg::{Cmsg, CmsgIter};
 pub use frame::*;
 pub use socket::Socket;
 pub use timestamping::Timestamping;
