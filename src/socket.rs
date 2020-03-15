@@ -1,10 +1,10 @@
-use crate::{sys, Cmsg, Frame, Timestamping};
+use crate::{sys, CmsgIter, Frame, Timestamping};
 use std::ffi::CStr;
 use std::io::{Error, Result};
 use std::mem::{self, size_of, size_of_val, MaybeUninit};
 use std::os::raw::c_int;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
-use std::{iter, ptr};
+use std::ptr;
 
 pub struct Socket(RawFd);
 
@@ -106,10 +106,7 @@ impl Socket {
         .ok_or_else(Error::last_os_error)
     }
 
-    pub fn recv_msg<'a>(
-        &self,
-        cmsg_buf: &'a mut [u8],
-    ) -> Result<(Frame, Option<impl 'a + Iterator<Item = Cmsg<'a>>>)> {
+    pub fn recv_msg<'a>(&self, cmsg_buf: &'a mut [u8]) -> Result<(Frame, Option<CmsgIter<'a>>)> {
         let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
         let mut iov = MaybeUninit::<libc::iovec>::uninit();
         let mut msg = MaybeUninit::<libc::msghdr>::uninit();
@@ -127,19 +124,7 @@ impl Socket {
             // frame will be moved
             (*iov.as_mut_ptr()).iov_base = ptr::null_mut();
             let frame = Frame::from_raw(frame, size as _).ok_or_else(Error::last_os_error)?;
-            let msg = msg.assume_init();
-
-            let cmsgs = if msg.msg_flags & libc::MSG_CTRUNC == 0 {
-                Some(
-                    iter::successors(libc::CMSG_FIRSTHDR(&msg).as_ref(), move |&cmsg| {
-                        libc::CMSG_NXTHDR(&msg, cmsg).as_ref()
-                    })
-                    .map(|cmsg| Cmsg::from_raw(cmsg)),
-                )
-            } else {
-                None
-            };
-
+            let cmsgs = CmsgIter::from_raw(msg.assume_init());
             Ok((frame, cmsgs))
         }
     }

@@ -15,12 +15,38 @@ impl<'a> Cmsg<'a> {
             .max()
             .unwrap_or_default() as _
     }
+}
 
-    pub(crate) unsafe fn from_raw(cmsg: &'a libc::cmsghdr) -> Self {
-        match (cmsg.cmsg_level, cmsg.cmsg_type) {
-            (libc::SOL_SOCKET, libc::SCM_TIMESTAMPING) => Self::Timestamping(cmsg_data(cmsg)),
-            _ => Self::Other(cmsg),
+pub struct CmsgIter<'a> {
+    msg: libc::msghdr,
+    cmsg: Option<&'a libc::cmsghdr>,
+}
+
+impl CmsgIter<'_> {
+    pub(crate) unsafe fn from_raw(msg: libc::msghdr) -> Option<Self> {
+        if msg.msg_flags & libc::MSG_CTRUNC == 0 {
+            Some(Self {
+                msg,
+                cmsg: libc::CMSG_FIRSTHDR(&msg).as_ref(),
+            })
+        } else {
+            None
         }
+    }
+}
+
+impl<'a> Iterator for CmsgIter<'a> {
+    type Item = Cmsg<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let cmsg = self.cmsg?;
+        self.cmsg = unsafe { libc::CMSG_NXTHDR(&self.msg, cmsg).as_ref() };
+        Some(match (cmsg.cmsg_level, cmsg.cmsg_type) {
+            (libc::SOL_SOCKET, libc::SCM_TIMESTAMPING) => {
+                Cmsg::Timestamping(unsafe { cmsg_data(cmsg) })
+            }
+            _ => Cmsg::Other(cmsg),
+        })
     }
 }
 
