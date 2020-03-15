@@ -51,6 +51,7 @@ impl Socket {
         .await
     }
 
+    #[allow(clippy::needless_lifetimes)]
     pub async fn recv_msg<'a>(
         &mut self,
         cmsg_buf: &'a mut [u8],
