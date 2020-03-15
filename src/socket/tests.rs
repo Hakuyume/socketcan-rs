@@ -12,9 +12,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-static LOCK: RwLock<()> = RwLock::new(());
+pub(crate) static LOCK: RwLock<()> = RwLock::new(());
 
-fn ifname() -> CString {
+pub(crate) fn ifname() -> CString {
     let ifname = env::var_os("IFNAME").expect("IFNAME environment variable is not set");
     CString::new(ifname.as_bytes()).unwrap()
 }
@@ -80,7 +80,7 @@ fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::
     })
 }
 
-fn random_data_standard() -> Frame {
+pub(crate) fn random_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
     let data = (0..rng.gen_range(0, sys::CAN_MAX_DLEN))
@@ -89,7 +89,7 @@ fn random_data_standard() -> Frame {
     Frame::Data(DataFrame::new(id, &data))
 }
 
-fn random_fd_data_standard() -> Frame {
+pub(crate) fn random_fd_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
     let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
     let data = (0..rng.gen_range(0, sys::CANFD_MAX_DLEN))
