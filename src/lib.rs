@@ -18,6 +18,8 @@
 //! # std::io::Result::Ok(())
 //! ```
 
+#[cfg(feature = "aio")]
+pub mod aio;
 mod cmsg;
 mod frame;
 mod socket;
