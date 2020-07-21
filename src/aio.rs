@@ -8,7 +8,6 @@ use mio::{PollOpt, Token};
 use std::ffi::CStr;
 use std::io::{ErrorKind, Result};
 use std::os::unix::io::{AsRawFd, RawFd};
-use std::ptr::NonNull;
 use std::task::Poll;
 use tokio::io::PollEvented;
 
@@ -57,23 +56,16 @@ impl Socket {
         cmsg_buf: &'a mut [u8],
     ) -> Result<(Frame, Option<CmsgIter<'a>>)> {
         let ready = Ready::readable() | Ready::from(UnixReady::error());
-        let mut cmsg_buf = NonNull::new(cmsg_buf);
+        let mut cmsg_buf = Some(cmsg_buf);
         poll_fn(|cx| {
             ready!(self.0.poll_read_ready(cx, ready))?;
-            match self
-                .0
-                .get_ref()
-                .0
-                .recv_msg(unsafe { &mut *cmsg_buf.unwrap().as_ptr() })
-            {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => {
+            match self.0.get_ref().0._recv_msg(cmsg_buf.take().unwrap()) {
+                Err((e, b)) if e.kind() == ErrorKind::WouldBlock => {
+                    cmsg_buf = Some(b);
                     self.0.clear_read_ready(cx, ready)?;
                     Poll::Pending
                 }
-                r => {
-                    cmsg_buf = None;
-                    Poll::Ready(r)
-                }
+                r => Poll::Ready(r.map_err(|(e, _)| e)),
             }
         })
         .await
