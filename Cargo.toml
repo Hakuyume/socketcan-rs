@@ -26,7 +26,7 @@ mio = { version = "0.6", optional = true }
 tokio = { version = "0.2", features = ["io-driver"], optional = true }
 
 [build-dependencies]
-bindgen = { version = "0.52", default-features = false, features = ["runtime"] }
+bindgen = { version = "0.54", default-features = false, features = ["runtime"] }
 
 [dev-dependencies]
 rand = "0.7"
