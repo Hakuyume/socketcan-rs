@@ -106,7 +106,10 @@ impl Socket {
         .ok_or_else(Error::last_os_error)
     }
 
-    pub fn recv_msg<'a>(&self, cmsg_buf: &'a mut [u8]) -> Result<(Frame, Option<CmsgIter<'a>>)> {
+    pub(crate) fn _recv_msg<'a>(
+        &self,
+        cmsg_buf: &'a mut [u8],
+    ) -> std::result::Result<(Frame, Option<CmsgIter<'a>>), (Error, &'a mut [u8])> {
         let mut frame = MaybeUninit::<sys::canfd_frame>::uninit();
         let mut iov = MaybeUninit::<libc::iovec>::uninit();
         let mut msg = MaybeUninit::<libc::msghdr>::uninit();
@@ -123,10 +126,15 @@ impl Socket {
             let size = libc::recvmsg(self.as_raw_fd(), msg.as_mut_ptr(), 0);
             // frame will be moved
             (*iov.as_mut_ptr()).iov_base = ptr::null_mut();
-            let frame = Frame::from_raw(frame, size as _).ok_or_else(Error::last_os_error)?;
+            let frame = Frame::from_raw(frame, size as _)
+                .ok_or_else(|| (Error::last_os_error(), cmsg_buf))?;
             let cmsgs = CmsgIter::from_raw(msg.assume_init());
             Ok((frame, cmsgs))
         }
+    }
+
+    pub fn recv_msg<'a>(&self, cmsg_buf: &'a mut [u8]) -> Result<(Frame, Option<CmsgIter<'a>>)> {
+        self._recv_msg(cmsg_buf).map_err(|(e, _)| e)
     }
 
     pub fn send(&self, frame: &Frame) -> Result<()> {

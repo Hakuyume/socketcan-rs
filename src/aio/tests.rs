@@ -183,3 +183,25 @@ async fn test_set_fd_frames_on() {
     socket_tx.send(&frame).await.unwrap();
     recv(socket_rx, Some(frame)).await.unwrap().unwrap();
 }
+
+#[tokio::test]
+async fn test_marker_traits() {
+    fn check<F>(_: F)
+    where
+        F: Send,
+    {
+    }
+
+    check(async {
+        let ifname = CString::new("NO DEVICE").unwrap();
+        let mut socket = Socket::bind(ifname).unwrap();
+
+        socket.recv().await.unwrap();
+
+        let mut cmsg_buf = Vec::new();
+        socket.recv_msg(&mut cmsg_buf).await.unwrap();
+
+        let frame = random_data_standard();
+        socket.send(&frame).await.unwrap();
+    })
+}
