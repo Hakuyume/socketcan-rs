@@ -121,7 +121,7 @@ impl Socket {
             (*msg.as_mut_ptr()).msg_iov = iov.as_mut_ptr();
             (*msg.as_mut_ptr()).msg_iovlen = 1;
             (*msg.as_mut_ptr()).msg_control = cmsg_buf.as_mut_ptr() as _;
-            (*msg.as_mut_ptr()).msg_controllen = cmsg_buf.len();
+            (*msg.as_mut_ptr()).msg_controllen = cmsg_buf.len() as _;
 
             let size = libc::recvmsg(self.as_raw_fd(), msg.as_mut_ptr(), 0);
             // frame will be moved
