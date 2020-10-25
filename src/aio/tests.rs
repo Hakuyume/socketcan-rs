@@ -5,7 +5,7 @@ use std::ffi::CString;
 use std::io::ErrorKind;
 use std::io::Result;
 use std::time::Duration;
-use tokio::time::{delay_for, timeout};
+use tokio::time::{sleep, timeout};
 
 macro_rules! lock {
     (shared) => {
@@ -108,7 +108,7 @@ async fn test_set_timestamping_on() {
         .unwrap()
         .unwrap()
         .unwrap();
-    delay_for(Duration::from_millis(100)).await;
+    sleep(Duration::from_millis(100)).await;
     let timestamp1 = recv_msg(socket_rx1, Some(frame))
         .await
         .unwrap()
