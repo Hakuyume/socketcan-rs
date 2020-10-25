@@ -1,10 +1,7 @@
 use crate::{CmsgIter, Frame, Timestamping};
-use futures::future::poll_fn;
-use futures::ready;
 use std::ffi::CStr;
 use std::io::{ErrorKind, Result};
 use std::os::unix::io::{AsRawFd, RawFd};
-use std::task::Poll;
 use tokio::io::unix::AsyncFd;
 
 pub struct Socket(AsyncFd<crate::Socket>);
@@ -32,14 +29,12 @@ impl Socket {
     }
 
     pub async fn recv(&mut self) -> Result<Frame> {
-        poll_fn(|cx| {
-            let _guard = ready!(self.0.poll_read_ready(cx))?;
-            match self.0.get_ref().recv() {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => Poll::Pending,
-                r => Poll::Ready(r),
+        loop {
+            match self.0.readable().await?.with_io(|| self.0.get_ref().recv()) {
+                Err(e) if e.kind() == ErrorKind::WouldBlock => (),
+                r => break r,
             }
-        })
-        .await
+        }
     }
 
     #[allow(clippy::needless_lifetimes)]
@@ -48,28 +43,30 @@ impl Socket {
         cmsg_buf: &'a mut [u8],
     ) -> Result<(Frame, Option<CmsgIter<'a>>)> {
         let mut cmsg_buf = Some(cmsg_buf);
-        poll_fn(|cx| {
-            let _guard = ready!(self.0.poll_read_ready(cx))?;
+        loop {
+            let mut guard = self.0.readable().await?;
             match self.0.get_ref()._recv_msg(cmsg_buf.take().unwrap()) {
                 Err((e, b)) if e.kind() == ErrorKind::WouldBlock => {
                     cmsg_buf = Some(b);
-                    Poll::Pending
+                    guard.clear_ready();
                 }
-                r => Poll::Ready(r.map_err(|(e, _)| e)),
+                r => break r.map_err(|(e, _)| e),
             }
-        })
-        .await
+        }
     }
 
     pub async fn send(&mut self, frame: &Frame) -> Result<()> {
-        poll_fn(|cx| {
-            let _guard = ready!(self.0.poll_write_ready(cx))?;
-            match self.0.get_ref().send(frame) {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => Poll::Pending,
-                r => Poll::Ready(r),
+        loop {
+            match self
+                .0
+                .writable()
+                .await?
+                .with_io(|| self.0.get_ref().send(frame))
+            {
+                Err(e) if e.kind() == ErrorKind::WouldBlock => (),
+                r => break r,
             }
-        })
-        .await
+        }
     }
 }
 
