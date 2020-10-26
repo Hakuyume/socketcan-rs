@@ -28,7 +28,7 @@ impl Socket {
         self.0.get_ref().set_fd_frames(enable)
     }
 
-    pub async fn recv(&mut self) -> Result<Frame> {
+    pub async fn recv(&self) -> Result<Frame> {
         loop {
             match self.0.readable().await?.with_io(|| self.0.get_ref().recv()) {
                 Err(e) if e.kind() == ErrorKind::WouldBlock => (),
@@ -39,7 +39,7 @@ impl Socket {
 
     #[allow(clippy::needless_lifetimes)]
     pub async fn recv_msg<'a>(
-        &mut self,
+        &self,
         cmsg_buf: &'a mut [u8],
     ) -> Result<(Frame, Option<CmsgIter<'a>>)> {
         let mut cmsg_buf = Some(cmsg_buf);
@@ -55,7 +55,7 @@ impl Socket {
         }
     }
 
-    pub async fn send(&mut self, frame: &Frame) -> Result<()> {
+    pub async fn send(&self, frame: &Frame) -> Result<()> {
         loop {
             match self
                 .0
