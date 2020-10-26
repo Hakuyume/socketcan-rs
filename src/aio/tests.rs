@@ -181,8 +181,8 @@ async fn test_set_fd_frames_on() {
     recv(socket_rx, Some(frame)).await.unwrap().unwrap();
 }
 
-#[tokio::test]
-async fn test_marker_traits() {
+#[test]
+fn test_marker_traits() {
     fn check<F>(_: F)
     where
         F: Send,
