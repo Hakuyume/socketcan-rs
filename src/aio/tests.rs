@@ -5,7 +5,7 @@ use std::ffi::CString;
 use std::io::ErrorKind;
 use std::io::Result;
 use std::time::Duration;
-use tokio::time::{delay_for, timeout};
+use tokio::time::{sleep, timeout};
 
 macro_rules! lock {
     (shared) => {
@@ -16,7 +16,7 @@ macro_rules! lock {
     };
 }
 
-async fn recv(mut socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
+async fn recv(socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
     timeout(Duration::from_millis(100), async {
         loop {
             let frame = socket.recv().await?;
@@ -29,10 +29,7 @@ async fn recv(mut socket: Socket, query: Option<Frame>) -> Option<Result<()>> {
     .ok()
 }
 
-async fn recv_msg(
-    mut socket: Socket,
-    query: Option<Frame>,
-) -> Option<Result<Option<libc::timespec>>> {
+async fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::timespec>>> {
     timeout(Duration::from_millis(100), async {
         let mut cmsg_buf = vec![0; Cmsg::space()];
         loop {
@@ -75,7 +72,7 @@ async fn test_nonblocking_on() {
 #[ignore]
 async fn test_default_timestamping_off() {
     lock!(shared);
-    let mut socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_tx = Socket::bind(ifname()).unwrap();
     let socket_rx = Socket::bind(ifname()).unwrap();
 
     let frame = random_data_standard();
@@ -91,7 +88,7 @@ async fn test_default_timestamping_off() {
 #[ignore]
 async fn test_set_timestamping_on() {
     lock!(shared);
-    let mut socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_tx = Socket::bind(ifname()).unwrap();
     let socket_rx0 = Socket::bind(ifname()).unwrap();
     let socket_rx1 = Socket::bind(ifname()).unwrap();
     socket_rx0
@@ -108,7 +105,7 @@ async fn test_set_timestamping_on() {
         .unwrap()
         .unwrap()
         .unwrap();
-    delay_for(Duration::from_millis(100)).await;
+    sleep(Duration::from_millis(100)).await;
     let timestamp1 = recv_msg(socket_rx1, Some(frame))
         .await
         .unwrap()
@@ -126,7 +123,7 @@ async fn test_set_timestamping_on() {
 #[ignore]
 async fn test_default_loopback_on() {
     lock!(shared);
-    let mut socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_tx = Socket::bind(ifname()).unwrap();
     let socket_rx = Socket::bind(ifname()).unwrap();
 
     let frame = random_data_standard();
@@ -138,7 +135,7 @@ async fn test_default_loopback_on() {
 #[ignore]
 async fn test_default_recv_own_msgs_off() {
     lock!(shared);
-    let mut socket = Socket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
 
     let frame = random_data_standard();
     socket.send(&frame).await.unwrap();
@@ -149,7 +146,7 @@ async fn test_default_recv_own_msgs_off() {
 #[ignore]
 async fn test_set_recv_own_msgs_on() {
     lock!(shared);
-    let mut socket = Socket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
     socket.set_recv_own_msgs(true).unwrap();
 
     let frame = random_data_standard();
@@ -161,7 +158,7 @@ async fn test_set_recv_own_msgs_on() {
 #[ignore]
 async fn test_default_fd_frames_off() {
     lock!(shared);
-    let mut socket = Socket::bind(ifname()).unwrap();
+    let socket = Socket::bind(ifname()).unwrap();
 
     let frame = random_fd_data_standard();
     assert_eq!(
@@ -174,7 +171,7 @@ async fn test_default_fd_frames_off() {
 #[ignore]
 async fn test_set_fd_frames_on() {
     lock!(shared);
-    let mut socket_tx = Socket::bind(ifname()).unwrap();
+    let socket_tx = Socket::bind(ifname()).unwrap();
     let socket_rx = Socket::bind(ifname()).unwrap();
     socket_tx.set_fd_frames(true).unwrap();
     socket_rx.set_fd_frames(true).unwrap();
@@ -184,8 +181,8 @@ async fn test_set_fd_frames_on() {
     recv(socket_rx, Some(frame)).await.unwrap().unwrap();
 }
 
-#[tokio::test]
-async fn test_marker_traits() {
+#[test]
+fn test_marker_traits() {
     fn check<F>(_: F)
     where
         F: Send,
@@ -194,7 +191,7 @@ async fn test_marker_traits() {
 
     check(async {
         let ifname = CString::new("NO DEVICE").unwrap();
-        let mut socket = Socket::bind(ifname).unwrap();
+        let socket = Socket::bind(ifname).unwrap();
 
         socket.recv().await.unwrap();
 
