@@ -21,7 +21,7 @@ aio = ["tokio"]
 [dependencies]
 bitflags = "1.2"
 libc = "0.2"
-tokio = { git = "https://github.com/tokio-rs/tokio.git", rev = "c30ce1f", features = ["net"], optional = true }
+tokio = { version = "^0.3.2", features = ["net"], optional = true }
 
 [build-dependencies]
 bindgen = { version = "0.55", default-features = false, features = ["runtime"] }
@@ -30,4 +30,4 @@ bindgen = { version = "0.55", default-features = false, features = ["runtime"] }
 rand = "0.7"
 spin = "0.6"
 structopt = "0.3"
-tokio = { git = "https://github.com/tokio-rs/tokio.git", rev = "c30ce1f", features = ["macros", "rt", "time"] }
+tokio = { version = "^0.3.2", features = ["macros", "rt", "time"] }
