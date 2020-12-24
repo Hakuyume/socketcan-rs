@@ -30,9 +30,8 @@ impl Socket {
 
     pub async fn recv(&self) -> Result<Frame> {
         loop {
-            match self.0.readable().await?.with_io(|| self.0.get_ref().recv()) {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => (),
-                r => break r,
+            if let Ok(v) = self.0.readable().await?.try_io(|s| s.get_ref().recv()) {
+                break v;
             }
         }
     }
@@ -57,14 +56,8 @@ impl Socket {
 
     pub async fn send(&self, frame: &Frame) -> Result<()> {
         loop {
-            match self
-                .0
-                .writable()
-                .await?
-                .with_io(|| self.0.get_ref().send(frame))
-            {
-                Err(e) if e.kind() == ErrorKind::WouldBlock => (),
-                r => break r,
+            if let Ok(v) = self.0.writable().await?.try_io(|s| s.get_ref().send(frame)) {
+                break v;
             }
         }
     }
