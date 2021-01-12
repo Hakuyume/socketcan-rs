@@ -18,7 +18,7 @@ impl Id {
         }
     }
 
-    pub(crate) fn into_can_id(self) -> u32 {
+    pub fn into_can_id(self) -> u32 {
         match self {
             Self::Standard(id) => {
                 assert!(id <= sys::CAN_SFF_MASK);
