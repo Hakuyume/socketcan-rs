@@ -13,15 +13,15 @@ jobs:
         target:
         - x86_64-unknown-linux-gnu
         - x86_64-unknown-linux-musl
-        dependency:
+        dependency-versions:
         - minimal
         - maximum
     steps:
     - uses: actions/checkout@v2
-    - if: matrix.dependency == 'minimal'
-      run: rustup toolchain add nightly
-    - if: matrix.dependency == 'minimal'
-      run: cargo +nightly update -Z minimal-versions
+    - if: matrix.dependency-versions == 'minimal'
+      run: |
+        rustup toolchain add nightly
+        cargo +nightly update -Z minimal-versions
     - run: rustup target add ${{ matrix.target }}
     - run: cargo build --verbose --target ${{ matrix.target }} --all-targets --all-features
     - run: cargo test --verbose --target ${{ matrix.target }} --all-features
