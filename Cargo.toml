@@ -1,6 +1,6 @@
 [package]
 name = "socketcan-alt"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Toru Ogawa <Hakuyume@users.noreply.github.com>"]
 edition = "2018"
 description = "Rust binding for SocketCAN"
@@ -21,13 +21,13 @@ aio = ["tokio"]
 [dependencies]
 bitflags = "1.2"
 libc = "0.2"
-tokio = { version = "1.0", features = ["net"], optional = true }
+tokio = { version = "1", features = ["net"], optional = true }
 
 [build-dependencies]
-bindgen = { version = "0.55", default-features = false, features = ["runtime"] }
+bindgen = { version = "0.58", default-features = false, features = ["runtime"] }
 
 [dev-dependencies]
-rand = "0.7.3"
-spin = "0.6.0"
+rand = "0.8.3"
+spin = "0.9.0"
 structopt = "0.3.21"
-tokio = { version = "1.0", features = ["macros", "rt", "time"] }
+tokio = { version = "1", features = ["macros", "rt", "time"] }
