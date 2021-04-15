@@ -82,8 +82,8 @@ fn recv_msg(socket: Socket, query: Option<Frame>) -> Option<Result<Option<libc::
 
 pub(crate) fn random_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
-    let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
-    let data = (0..rng.gen_range(0, sys::CAN_MAX_DLEN))
+    let id = Id::Standard(rng.gen_range(0..sys::CAN_SFF_MASK));
+    let data = (0..rng.gen_range(0..sys::CAN_MAX_DLEN))
         .map(|_| rng.gen())
         .collect::<Vec<_>>();
     Frame::Data(DataFrame::new(id, &data))
@@ -91,8 +91,8 @@ pub(crate) fn random_data_standard() -> Frame {
 
 pub(crate) fn random_fd_data_standard() -> Frame {
     let mut rng = rand::thread_rng();
-    let id = Id::Standard(rng.gen_range(0, sys::CAN_SFF_MASK));
-    let data = (0..rng.gen_range(0, sys::CANFD_MAX_DLEN))
+    let id = Id::Standard(rng.gen_range(0..sys::CAN_SFF_MASK));
+    let data = (0..rng.gen_range(0..sys::CANFD_MAX_DLEN))
         .map(|_| rng.gen())
         .collect::<Vec<_>>();
     Frame::FdData(FdDataFrame::new(id, false, false, &data))
