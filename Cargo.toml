@@ -2,7 +2,7 @@
 name = "socketcan-alt"
 version = "0.3.0"
 authors = ["Toru Ogawa <Hakuyume@users.noreply.github.com>"]
-edition = "2018"
+edition = "2021"
 description = "Rust binding for SocketCAN"
 license = "BSD-3-Clause"
 documentation = "https://docs.rs/crate/socketcan-alt/"
