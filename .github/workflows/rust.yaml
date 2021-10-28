@@ -6,7 +6,6 @@ on:
   pull_request:
 
 env:
-  BINDGEN_EXTRA_CLANG_ARGS: -Ican-utils/include
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -17,12 +16,17 @@ jobs:
         target:
         - x86_64-unknown-linux-gnu
         - x86_64-unknown-linux-musl
+        header:
+        - v2020.11.0
+        - v2020.12.0
         dependency-versions:
         - minimal
         - maximum
+    env:
+      BINDGEN_EXTRA_CLANG_ARGS: -Ican-utils/include
     steps:
     - uses: actions/checkout@v2
-    - run: git clone --depth 1 https://github.com/linux-can/can-utils.git
+    - run: git clone https://github.com/linux-can/can-utils.git --branch ${{ matrix.header }} --depth 1
     - if: matrix.dependency-versions == 'minimal'
       run: |
         rustup toolchain add nightly
@@ -34,6 +38,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: git clone --depth 1 https://github.com/linux-can/can-utils.git
     - run: cargo fmt --verbose -- --check
     - run: cargo clippy --all-targets --all-features
