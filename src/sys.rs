@@ -6,26 +6,24 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-pub unsafe fn can_frame_len(frame: *const can_frame) -> u8 {
-    #[cfg(feature = "can-dlc-unaliased")]
-    {
-        (*frame).can_dlc
+#[cfg(feature = "can-dlc-unaliased")]
+impl can_frame {
+    pub(crate) fn len(&self) -> u8 {
+        self.can_dlc
     }
 
-    #[cfg(not(feature = "can-dlc-unaliased"))]
-    {
-        (*frame).__bindgen_anon_1.len
+    pub(crate) unsafe fn set_len(&mut self, len: u8) {
+        self.can_dlc = len;
     }
 }
 
-pub unsafe fn can_frame_len_mut(frame: *mut can_frame) -> *mut u8 {
-    #[cfg(feature = "can-dlc-unaliased")]
-    {
-        &mut (*frame).can_dlc
+#[cfg(not(feature = "can-dlc-unaliased"))]
+impl can_frame {
+    pub(crate) fn len(&self) -> u8 {
+        unsafe { self.__bindgen_anon_1.len }
     }
 
-    #[cfg(not(feature = "can-dlc-unaliased"))]
-    {
-        &mut (*frame).__bindgen_anon_1.len
+    pub(crate) unsafe fn set_len(&mut self, len: u8) {
+        self.__bindgen_anon_1.len = len;
     }
 }
