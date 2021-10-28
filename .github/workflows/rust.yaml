@@ -26,12 +26,13 @@ jobs:
       BINDGEN_EXTRA_CLANG_ARGS: -Ican-utils/include
     steps:
     - uses: actions/checkout@v2
-    - run: git clone https://github.com/linux-can/can-utils.git --branch ${{ matrix.header }} --depth 1
+    - run: rustup update
     - if: matrix.dependency-versions == 'minimal'
       run: |
         rustup toolchain add nightly
         cargo +nightly update -Z minimal-versions
     - run: rustup target add ${{ matrix.target }}
+    - run: git clone https://github.com/linux-can/can-utils.git --branch ${{ matrix.header }} --depth 1
     - run: >-
         cargo build --verbose
         --target ${{ matrix.target }}
@@ -47,5 +48,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: rustup update
     - run: cargo fmt --verbose -- --check
     - run: cargo clippy --all-targets --features aio --features can-dlc-unaliased
