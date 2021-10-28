@@ -15,7 +15,7 @@ impl RemoteFrame {
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();
-            (*inner.as_mut_ptr()).can_dlc = dlc;
+            *sys::can_frame_len_mut(inner.as_mut_ptr()) = dlc;
             Self(inner.assume_init())
         }
     }
@@ -25,7 +25,8 @@ impl RemoteFrame {
     }
 
     pub fn dlc(&self) -> u8 {
-        self.0.can_dlc
+        // SAFETY: call is safe, because &self.0 points to a valid reference
+        unsafe { sys::can_frame_len(&self.0) }
     }
 }
 
