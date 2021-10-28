@@ -15,7 +15,7 @@ impl DataFrame {
         let mut inner = MaybeUninit::<sys::can_frame>::zeroed();
         unsafe {
             (*inner.as_mut_ptr()).can_id = id.into_can_id();
-            *sys::can_frame_len_mut(inner.as_mut_ptr()) = data.len() as _;
+            (&mut *inner.as_mut_ptr()).set_len(data.len() as _);
             (*inner.as_mut_ptr()).data[..data.len()].copy_from_slice(data);
             Self(inner.assume_init())
         }
@@ -26,8 +26,7 @@ impl DataFrame {
     }
 
     pub fn data(&self) -> &[u8] {
-        // SAFETY: call is safe, because &self.0 points to a valid reference
-        &self.0.data[..unsafe { sys::can_frame_len(&self.0) } as _]
+        &self.0.data[..self.0.len() as _]
     }
 }
 
